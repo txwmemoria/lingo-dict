@@ -424,7 +424,10 @@ test-results/
 
 # 词书源数据：81 个 ZIP 共 71 MiB，不入库。
 # bookLists.txt 和上游脚本保留，克隆后按 README 的「获取词书源数据」重新下载。
-/data/kajweb-dict/book/*.zip
+# 词书源数据整个不入库：它是上游项目的副本（含其 README、下载脚本和 CDN 直链），
+# 内容属于第三方，本地自用即可，没有理由在这里再存一份。
+# 用法见 README——克隆 kajweb/dict 到 data/kajweb-dict。
+/data/kajweb-dict/
 
 # Mac bundle stuff
 # 限定在构建产物目录内：忽略大小写的文件系统（Windows/macOS 默认）上，

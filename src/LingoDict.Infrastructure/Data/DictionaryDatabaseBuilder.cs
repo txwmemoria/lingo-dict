@@ -249,7 +249,7 @@ public sealed class DictionaryDatabaseBuilder
             var tags = item.TryGetProperty("tags", out var tagItems)
                 ? string.Join(" · ", tagItems.EnumerateArray()
                     .Select(x => x.TryGetProperty("tagName", out var tag) ? tag.GetString() : null)
-                    .Where(x => !string.IsNullOrWhiteSpace(x)))
+                    .Where(x => !string.IsNullOrWhiteSpace(x) && KeptTags.Contains(x!)))
                 : string.Empty;
             result[id] = new BookMetadata(
                 item.TryGetProperty("title", out var title) ? title.GetString() ?? id : id,
@@ -583,6 +583,25 @@ public sealed class DictionaryDatabaseBuilder
         optimize.CommandText = "PRAGMA journal_mode=DELETE; PRAGMA synchronous=NORMAL; ANALYZE; VACUUM;";
         optimize.ExecuteNonQuery();
     }
+
+    /// <summary>
+    /// 允许进库的词书标签：考试等级和教材版本。
+    /// </summary>
+    /// <remarks>
+    /// 源数据的 tags 里混着两类东西——一类说明这本书**是什么内容**
+    /// （四级、考研、IELTS、人教版），一类只是**谁做的**。
+    /// 后者对使用者没有意义，而且这份词书数据只是本地自用的输入，
+    /// 没有理由把提供方的品牌带进我们生成的数据库。
+    ///
+    /// 用白名单而不是黑名单：黑名单要把每个品牌名写进源码（正是不想要的），
+    /// 而且以后源数据多一个品牌就漏一个。白名单只认得内容分类，其余一律丢。
+    /// </remarks>
+    private static readonly HashSet<string> KeptTags = new(StringComparer.Ordinal)
+    {
+        "四级", "六级", "专四", "专八", "考研", "中考", "高考",
+        "IELTS", "TOEFL", "GRE", "GMAT", "SAT", "BEC",
+        "人教版", "北师版", "外研社版",
+    };
 
     private sealed record BookMetadata(string Title, string Tags, int WordCount);
 

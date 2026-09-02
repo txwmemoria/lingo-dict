@@ -20,7 +20,7 @@ public interface ISpeechService
 /// <summary>
 /// 用操作系统自带的 TTS 朗读，完全离线。
 ///
-/// 源数据里的 ukspeech/usspeech 只是有道 TTS 接口的查询串（如 "abruptly&amp;type=1"），
+/// 源数据里的 ukspeech/usspeech 只是某个在线 TTS 接口的查询串（如 "abruptly&amp;type=1"），
 /// 压缩包内没有任何音频文件；用它们就必须联网并把查询词发给第三方，与"离线词典"相悖。
 /// </summary>
 /// <remarks>

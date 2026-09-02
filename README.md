@@ -44,12 +44,18 @@ Windows installer and macOS `.dmg` for both Apple Silicon and Intel.
 
 You need the .NET SDK 9 and Python 3 (for the one-time data import).
 
-The 81 source ZIPs (~71 MiB) are **not in this repository** — they belong to
-[kajweb](https://github.com/kajweb)'s vocabulary-book project. Fetch them first:
+The vocabulary data is **not in this repository** — it belongs to
+[kajweb/dict](https://github.com/kajweb/dict). Clone it and run its downloader:
+
+```bash
+git clone https://github.com/kajweb/dict data/kajweb-dict
+```
 
 ```bash
 python data/kajweb-dict/download.py
 ```
+
+That fetches 81 archives, about 71 MiB. `data/kajweb-dict/` is git-ignored here.
 
 Then build the dictionary database (~103 MiB, written to `artifacts/dictionary.db`):
 

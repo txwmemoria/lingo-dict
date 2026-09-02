@@ -39,12 +39,18 @@ Windows / macOS 上的离线英汉词典。不联网、不注册、不上报—�
 
 需要 .NET SDK 9 和 Python 3（后者只用于一次性导入数据）。
 
-81 个源 ZIP（约 71 MiB）**不在本仓库里**——它们属于
-[kajweb](https://github.com/kajweb) 的「单词本源」项目。先下载：
+词书数据**不在本仓库里**——它属于 [kajweb/dict](https://github.com/kajweb/dict)。
+克隆它，再跑它自带的下载脚本：
+
+```bash
+git clone https://github.com/kajweb/dict data/kajweb-dict
+```
 
 ```bash
 python data/kajweb-dict/download.py
 ```
+
+会取回 81 个压缩包，约 71 MiB。`data/kajweb-dict/` 在本仓库里是 git-ignored 的。
 
 再生成词典数据库（约 103 MiB，落在 `artifacts/dictionary.db`）：
 

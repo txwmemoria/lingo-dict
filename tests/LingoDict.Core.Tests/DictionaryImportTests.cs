@@ -53,7 +53,7 @@ public sealed class DictionaryImportTests : IAsyncLifetime
             Path.Combine(source, "bookLists.txt"),
             """
             {"data":{"normalBooksInfo":[
-              {"id":"TEST_1","title":"测试词书一","wordNum":6,"tags":[{"tagName":"测试"}]},
+              {"id":"TEST_1","title":"测试词书一","wordNum":6,"tags":[{"tagName":"四级"},{"tagName":"某出版方"}]},
               {"id":"TEST_2","title":"测试词书二","wordNum":1,"tags":[]},
               {"id":"TEST_3","title":"测试词书三","wordNum":1,"tags":[]}
             ]}}
@@ -342,7 +342,11 @@ public sealed class DictionaryImportTests : IAsyncLifetime
 
         Assert.Equal(["测试词书一", "测试词书三", "测试词书二"], books.Select(x => x.Title));
         Assert.Equal(5, books.Single(x => x.Id == "TEST_1").WordCount);
-        Assert.Equal("测试", books.Single(x => x.Id == "TEST_1").Tags);
+
+        // 标签只留说明内容的分类。源数据里混着提供方的名字，那是「谁做的」
+        // 而不是「这本书是什么」，白名单认不出来的一律丢掉——
+        // 用黑名单的话每个品牌名都得写进源码，而且新出现一个就漏一个。
+        Assert.Equal("四级", books.Single(x => x.Id == "TEST_1").Tags);
     }
 
     [Fact]
