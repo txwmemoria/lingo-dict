@@ -21,6 +21,26 @@
     <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
+  <!--
+      Release 下不生成调试目录。
+
+      根目录的 Directory.Build.props 用 PathMap 把构建机路径重写成 /_/，
+      对 Core / Infrastructure / Grammar 都生效，唯独这个项目不行：
+      Avalonia 的 XAML 编译器会在编译之后重写输出程序集，把调试目录连同
+      真实的 PDB 绝对路径一起写回去，PathMap 的结果被覆盖掉。
+
+          D:\projects\lingo-dict\src\LingoDict.App\obj\Release\...\LingoDict.pdb
+
+      publish.ps1 已经删掉了 *.pdb 文件，但 DLL 里指向它的那条路径还在，
+      随安装包一起分发出去。这里干脆不生成。
+
+      代价是这个程序集的异常堆栈没有行号了。其余三个程序集仍然有——
+      业务逻辑基本都在那边，界面层的堆栈少了行号还能靠方法名定位。
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="LingoDict.App.Tests" />
   </ItemGroup>

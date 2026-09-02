@@ -1,0 +1,23 @@
+<Project>
+
+  <!--
+      Release 构建里不要留下构建机的路径。
+
+      即使 publish.ps1 已经把 *.pdb 全删了，DLL 的 PE 调试目录里仍然留着一条
+      指向它的绝对路径：
+
+          D:\projects\lingo-dict\src\LingoDict.Core\obj\Release\net9.0\LingoDict.Core.pdb
+
+      每个程序集一条。分发安装包等于把这条路径也发出去——它暴露的是构建机的
+      目录结构（这次没带用户名，但那只是因为项目不在 C:\Users 下面）。
+
+      PathMap 把源码根重写成 /_/，调试目录里那条路径也跟着变。仍然保留行号，
+      所以异常堆栈还是可读的——比 DebugType=none 好，那个会把行号一起删掉。
+
+      只在 Release 生效：Debug 下要靠真实路径让调试器找到源码。
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PathMap>$(MSBuildThisFileDirectory)=/_/</PathMap>
+  </PropertyGroup>
+
+</Project>
