@@ -42,14 +42,16 @@
                     <TextBlock Text="离线英语词典" FontSize="{DynamicResource FontSizeCaption}" Margin="0,1,0,0"
                                Foreground="{DynamicResource BrandSubtitle}" />
                 </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" Margin="0,0,10,0"
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,10,0"
                             VerticalAlignment="Center">
-                    <Button Theme="{DynamicResource BorderlessButton}" ToolTip.Tip="后退（Alt+← 或鼠标侧键）"
+                    <Button Theme="{DynamicResource BorderlessButton}" Classes="nav"
+                            ToolTip.Tip="后退（Alt+← 或鼠标侧键）"
                             Command="{Binding GoBackCommand}">
                         <icons:MaterialIcon Kind="ArrowLeft" Width="19" Height="19"
                                             Foreground="{DynamicResource BrandSubtitle}" />
                     </Button>
-                    <Button Theme="{DynamicResource BorderlessButton}" ToolTip.Tip="前进（Alt+→ 或鼠标侧键）"
+                    <Button Theme="{DynamicResource BorderlessButton}" Classes="nav"
+                            ToolTip.Tip="前进（Alt+→ 或鼠标侧键）"
                             Command="{Binding GoForwardCommand}">
                         <icons:MaterialIcon Kind="ArrowRight" Width="19" Height="19"
                                             Foreground="{DynamicResource BrandSubtitle}" />

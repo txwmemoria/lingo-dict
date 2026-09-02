@@ -39,6 +39,7 @@ public sealed class Shots
         Shot(dir, "light-bookmark", ThemeVariant.Light, Bookmark);
         Shot(dir, "light-large", ThemeVariant.Light, Large);
         Shot(dir, "light-hover", ThemeVariant.Light, HoverSentence);
+        Shot(dir, "light-nav", ThemeVariant.Light, Navigated);
         Shot(dir, "light-favorites", ThemeVariant.Light, HoverFavoriteRow);
         Shot(dir, "light-phrases", ThemeVariant.Light, PhraseHits);
         Shot(dir, "light-placeholder", ThemeVariant.Light, EmptySearch);
@@ -79,6 +80,19 @@ public sealed class Shots
         c.Window.GetVisualDescendants().OfType<TabControl>().First().SelectedIndex = 4;
         Pump();
         c.Vm.Study.RevealCommand.Execute(null);
+        Pump();
+    }
+
+    /// <summary>
+    /// 点进两个词，让「后退」可用而「前进」不可用——顶栏那两个箭头
+    /// 必须一眼能看出哪个是死的。原来图标写死了 Foreground，
+    /// 把按钮的禁用态盖掉，两个永远一样亮。
+    /// </summary>
+    private static void Navigated((Window Window, MainViewModel Vm, FakeStudyRepository Study) c)
+    {
+        c.Vm.SelectedSearchResult = c.Vm.SearchResults[0];
+        Pump();
+        c.Vm.SelectedSearchResult = c.Vm.SearchResults[1];
         Pump();
     }
 
