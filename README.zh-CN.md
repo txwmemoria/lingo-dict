@@ -32,8 +32,15 @@ Windows / macOS 上的离线英汉词典。不联网、不注册、不上报—�
 
 ## 安装
 
-还没有发行版，先从源码构建（见下）。发布之后会带 Windows 安装程序和 macOS 的 `.dmg`
-（Apple Silicon 和 Intel 各一个）。
+到 [Releases](https://github.com/sdkpods/LingoDict/releases/latest) 拿最新的包：
+
+- **Windows** —— `LingoDict-*-win-x64-Setup.exe`。装到 `%LOCALAPPDATA%\LingoDict`，不需要管理员权限。
+- **macOS** —— 按芯片选 `.dmg`（Apple Silicon 用 `osx-arm64`，Intel 用 `osx-x64`），拖进 Applications。
+
+macOS 的包**没有签名和公证**。首次打开要右键 →「打开」，
+或者执行 `xattr -dr com.apple.quarantine /Applications/LingoDict.app`。
+
+也可以从源码构建，见下。
 
 ## 从源码构建
 
@@ -101,7 +108,7 @@ dotnet run --project src/LingoDict.App
 dotnet test
 ```
 
-526 条。`LingoDict.App.Tests` 用 Avalonia 无头后端渲染真正的 `MainWindow`——
+541 条。`LingoDict.App.Tests` 用 Avalonia 无头后端渲染真正的 `MainWindow`——
 编译期查不到的那些只能这么验：`ReflectionBinding` 的 `$parent` 路径、高亮附加属性、
 空段落隐藏。
 

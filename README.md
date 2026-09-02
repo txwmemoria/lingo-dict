@@ -37,8 +37,15 @@ into nothing.
 
 ## Install
 
-No binary releases yet — build from source (below). Once published, releases will carry a
-Windows installer and macOS `.dmg` for both Apple Silicon and Intel.
+Grab the latest build from [Releases](https://github.com/sdkpods/LingoDict/releases/latest):
+
+- **Windows** — `LingoDict-*-win-x64-Setup.exe`. Installs to `%LOCALAPPDATA%\LingoDict`, no administrator rights needed.
+- **macOS** — the `.dmg` for your chip (`osx-arm64` for Apple Silicon, `osx-x64` for Intel), then drag it into Applications.
+
+The macOS build is **neither signed nor notarized**. On first launch use right-click → Open,
+or run `xattr -dr com.apple.quarantine /Applications/LingoDict.app`.
+
+Or build from source, below.
 
 ## Build from source
 
@@ -105,7 +112,7 @@ you to word 37 and `Alt+↑` goes to word 36.
 dotnet test
 ```
 
-526 tests. `LingoDict.App.Tests` renders the real `MainWindow` through Avalonia's headless
+541 tests. `LingoDict.App.Tests` renders the real `MainWindow` through Avalonia's headless
 backend, which is the only way to catch what the compiler cannot — `ReflectionBinding`
 `$parent` paths, highlight attached properties, empty-section collapsing.
 
