@@ -18,7 +18,7 @@ public sealed class SqliteDictionaryRepository(string databasePath) : IDictionar
         (SELECT COUNT(*) FROM book_words bw WHERE bw.word_id=w.id)
         """;
 
-    private const string SupportedSchemaVersion = "6";
+    private const string SupportedSchemaVersion = "7";
 
     private readonly string _connectionString = CreateConnectionString(databasePath);
 
@@ -62,19 +62,72 @@ public sealed class SqliteDictionaryRepository(string databasePath) : IDictionar
         }
 
         var normalized = WordNormalizer.Normalize(trimmed);
+
+        // 输入的可能是个变化形式（cancelled / mice / better）。库里的词头基本都是
+        // 原形，不查这张表的话这类输入要么一无所获，要么只在别的词的例句里
+        // 蹭到几个不相干的命中。命中原形就把它顶到最前面——用户要的就是它。
+        var lemma = await ResolveFormAsync(connection, normalized, cancellationToken).ConfigureAwait(false);
+
         var match = SearchText.BuildMatchExpression(trimmed);
         if (match is not null)
         {
             var hits = await MatchAsync(connection, match, normalized, clamped, cancellationToken).ConfigureAwait(false);
-            if (hits.Count > 0)
+            if (hits.Count > 0 || lemma is not null)
             {
-                return await AttachCollocationsAsync(connection, hits, CollocationsPerWord, cancellationToken).ConfigureAwait(false);
+                return await AttachCollocationsAsync(
+                    connection, Prepend(lemma, hits, clamped), CollocationsPerWord, cancellationToken).ConfigureAwait(false);
             }
         }
 
         // FTS 要求词元相邻，"取消 订单" 这类跨字段的输入会落空；此时退回子串扫描兜底。
         var scanned = await ScanAsync(connection, trimmed, normalized, clamped, cancellationToken).ConfigureAwait(false);
-        return await AttachCollocationsAsync(connection, scanned, CollocationsPerWord, cancellationToken).ConfigureAwait(false);
+        return await AttachCollocationsAsync(
+            connection, Prepend(lemma, scanned, clamped), CollocationsPerWord, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 把词形回退命中的原形放到结果最前面，并去掉后面重复的那条。
+    /// </summary>
+    private static IReadOnlyList<WordSummary> Prepend(WordSummary? lemma, IReadOnlyList<WordSummary> rest, int limit)
+    {
+        if (lemma is null)
+        {
+            return rest;
+        }
+
+        var result = new List<WordSummary>(rest.Count + 1) { lemma };
+        result.AddRange(rest.Where(x => x.Id != lemma.Id));
+        return result.Count > limit ? result[..limit] : result;
+    }
+
+    /// <summary>
+    /// 输入是某个词头的变化形式吗？是就返回那个词头。
+    /// </summary>
+    /// <remarks>
+    /// word_forms 的主键就是 form，这是一次主键查找，代价可以忽略，
+    /// 所以每次搜索都问一遍，不必等别的路子先落空。
+    /// </remarks>
+    private static async Task<WordSummary?> ResolveFormAsync(
+        SqliteConnection connection,
+        string normalized,
+        CancellationToken cancellationToken)
+    {
+        if (normalized.Length == 0)
+        {
+            return null;
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"""
+            SELECT {SummaryColumns}
+            FROM word_forms f
+            JOIN words w ON w.id=f.word_id
+            JOIN entries e ON e.id=w.canonical_entry_id
+            WHERE f.form=$form;
+            """;
+        command.Parameters.AddWithValue("$form", normalized);
+        var found = await ReadSummariesAsync(command, cancellationToken).ConfigureAwait(false);
+        return found.Count > 0 ? found[0] : null;
     }
 
     private static async Task<IReadOnlyList<WordSummary>> BrowseAsync(
@@ -87,7 +140,11 @@ public sealed class SqliteDictionaryRepository(string databasePath) : IDictionar
             SELECT {SummaryColumns}
             FROM words w
             JOIN entries e ON e.id=w.canonical_entry_id
-            ORDER BY length(w.headword), w.headword COLLATE NOCASE
+            -- 词频优先，未知（0）垫底。原来纯按长度排，短的生僻词
+            -- （apt、wry）会挤在 the、have 前面。
+            ORDER BY
+                CASE WHEN w.frequency = 0 THEN 1 ELSE 0 END, w.frequency,
+                length(w.headword), w.headword COLLATE NOCASE
             LIMIT $limit;
             """;
         command.Parameters.AddWithValue("$limit", limit);
@@ -131,7 +188,9 @@ public sealed class SqliteDictionaryRepository(string databasePath) : IDictionar
                     WHEN w.normalized LIKE $prefix THEN 1
                     ELSE 2
                 END,
-                r.score, length(w.headword), w.headword COLLATE NOCASE
+                r.score,
+                CASE WHEN w.frequency = 0 THEN 1 ELSE 0 END, w.frequency,
+                length(w.headword), w.headword COLLATE NOCASE
             LIMIT $limit;
             """;
         command.Parameters.AddWithValue("$match", match);

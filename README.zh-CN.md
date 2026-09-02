@@ -52,7 +52,17 @@ python data/kajweb-dict/download.py
 
 会取回 81 个压缩包，约 71 MiB。`data/kajweb-dict/` 在本仓库里是 git-ignored 的。
 
-再生成词典数据库（约 103 MiB，落在 `artifacts/dictionary.db`）：
+可选：加上 [ECDICT](https://github.com/skywind3000/ECDICT)（MIT，63 MiB）的
+词频和词形变化。
+
+```bash
+curl -L -o data/ecdict/ecdict.csv https://raw.githubusercontent.com/skywind3000/ECDICT/master/ecdict.csv
+```
+
+不加也能导入，只是少了按词频排序和词形回退（输入 `cancelled` 会一无所获，
+而不是落到 `cancel`）。
+
+再生成词典数据库（约 104 MiB，落在 `artifacts/dictionary.db`）：
 
 ```bash
 dotnet run --project src/LingoDict.Importer

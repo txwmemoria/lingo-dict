@@ -57,7 +57,17 @@ python data/kajweb-dict/download.py
 
 That fetches 81 archives, about 71 MiB. `data/kajweb-dict/` is git-ignored here.
 
-Then build the dictionary database (~103 MiB, written to `artifacts/dictionary.db`):
+Optionally, add word frequencies and inflected forms from
+[ECDICT](https://github.com/skywind3000/ECDICT) (MIT, 63 MiB):
+
+```bash
+curl -L -o data/ecdict/ecdict.csv https://raw.githubusercontent.com/skywind3000/ECDICT/master/ecdict.csv
+```
+
+Without it the import still works — you just lose frequency ordering and the
+inflected-form fallback (typing `cancelled` finds nothing instead of `cancel`).
+
+Then build the dictionary database (~104 MiB, written to `artifacts/dictionary.db`):
 
 ```bash
 dotnet run --project src/LingoDict.Importer

@@ -157,6 +157,54 @@ public sealed class SearchLatencyTests
         }
     }
 
+    [SkippableFact]
+    public async Task RealDatabase_AnInflectedFormFindsItsHeadword()
+    {
+        Skip.If(Database is null, Missing);
+        var repo = new SqliteDictionaryRepository(Database!);
+
+        // 这些以前一无所获：库里的词头是原形，输入变化形式什么也匹配不上。
+        foreach (var (typed, expected) in new[] { ("cancelled", "cancel"), ("ran", "run"), ("studying", "study") })
+        {
+            var hits = await repo.SearchAsync(typed, 20);
+            Skip.If(hits.Count == 0, $"{typed} 无结果——这台机器上的词典库可能没接词频数据");
+            Assert.Equal(expected, hits[0].Headword);
+        }
+    }
+
+    [SkippableFact]
+    public async Task RealDatabase_BrowsingLeadsWithCommonWordsNotShortOnes()
+    {
+        Skip.If(Database is null, Missing);
+        var repo = new SqliteDictionaryRepository(Database!);
+
+        var browse = await repo.SearchAsync(string.Empty, 12);
+
+        // 原来纯按长度排，首屏就是 I, a, n, BA, BC, CD, CV, DJ, DP, Dr, HQ, ID
+        // ——一整屏两字母缩写，对任何人都没有用。
+        //
+        // 不能用「短词有几个」来判：of / a / to / it / I 本身就是最常用的词，
+        // 它们出现在首屏是对的。要钉的是那批生僻缩写不再冒头。
+        Assert.Equal("the", browse[0].Headword);
+        Assert.DoesNotContain(browse, x => x.Headword is "BA" or "BC" or "CD" or "CV" or "DJ" or "DP" or "HQ");
+    }
+
+    [SkippableFact]
+    public async Task RealDatabase_FrequencyDoesNotOutrankRelevance()
+    {
+        Skip.If(Database is null, Missing);
+        var repo = new SqliteDictionaryRepository(Database!);
+
+        // 词频排在 bm25 之后，不能反过来。off 的词频（205）远高于 cancel（3915），
+        // 但搜「取消」时该给 cancel——把词频提到相关度前面就会退化成这样。
+        var hits = await repo.SearchAsync("取消", 10);
+        var cancel = hits.Select(x => x.Headword).ToList().IndexOf("cancel");
+        var off = hits.Select(x => x.Headword).ToList().IndexOf("off");
+
+        Assert.True(cancel >= 0, "搜「取消」没有 cancel：" + string.Join(", ", hits.Select(x => x.Headword)));
+        Assert.True(off < 0 || cancel < off, "off 排到了 cancel 前面：" + string.Join(", ", hits.Select(x => x.Headword)));
+    }
+
     private static string? Locate(string relative)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

@@ -19,7 +19,14 @@ public sealed record ImportResult(
     int MembershipCount,
     int WordCount,
     long DatabaseBytes,
-    TimeSpan Duration);
+    TimeSpan Duration)
+{
+    /// <summary>拿到词频的词头数。接了 ECDICT 才非零。</summary>
+    public int FrequencyCount { get; init; }
+
+    /// <summary>新增的可查词形数（cancelled → cancel 这类）。</summary>
+    public int FormCount { get; init; }
+}
 
 public sealed class DictionaryDatabaseBuilder
 {
@@ -31,7 +38,8 @@ public sealed class DictionaryDatabaseBuilder
         string sourceRoot,
         string outputPath,
         Action<ImportProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? frequencySource = null)
     {
         var finalPath = Path.GetFullPath(outputPath);
         Directory.CreateDirectory(Path.GetDirectoryName(finalPath)!);
@@ -42,7 +50,7 @@ public sealed class DictionaryDatabaseBuilder
 
         try
         {
-            var result = BuildInto(sourceRoot, stagingPath, progress, cancellationToken);
+            var result = BuildInto(sourceRoot, stagingPath, progress, cancellationToken, frequencySource);
             File.Move(stagingPath, finalPath, overwrite: true);
             return result with { DatabaseBytes = new FileInfo(finalPath).Length };
         }
@@ -68,7 +76,8 @@ public sealed class DictionaryDatabaseBuilder
         string sourceRoot,
         string outputPath,
         Action<ImportProgress>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? frequencySource)
     {
         var startedAt = DateTimeOffset.UtcNow;
         var bookDirectory = Path.Combine(sourceRoot, "book");
@@ -200,6 +209,9 @@ public sealed class DictionaryDatabaseBuilder
 
         commands.SelectCanonicalEntries();
         transaction.Commit();
+
+        var enrichment = ApplyFrequency(connection, FrequencyIndex.Load(frequencySource, cancellationToken));
+
         CreateSearchIndex(connection);
         CreatePhraseIndex(connection);
         DropImportOnlyColumns(connection);
@@ -212,7 +224,114 @@ public sealed class DictionaryDatabaseBuilder
             membershipCount,
             wordIds.Count,
             new FileInfo(outputPath).Length,
-            DateTimeOffset.UtcNow - startedAt);
+            DateTimeOffset.UtcNow - startedAt)
+        {
+            FrequencyCount = enrichment.Frequencies,
+            FormCount = enrichment.Forms,
+        };
+    }
+
+    /// <summary>把词频写进 words，把词形变化写进 word_forms。</summary>
+    private static (int Frequencies, int Forms) ApplyFrequency(SqliteConnection connection, FrequencyIndex index)
+    {
+        if (index.Count == 0)
+        {
+            return (0, 0);
+        }
+
+        var words = new List<(long Id, string Normalized)>();
+        using (var read = connection.CreateCommand())
+        {
+            read.CommandText = "SELECT id, normalized FROM words;";
+            using var reader = read.ExecuteReader();
+            while (reader.Read())
+            {
+                words.Add((reader.GetInt64(0), reader.GetString(1)));
+            }
+        }
+
+        var known = words.Select(x => x.Normalized).ToHashSet(StringComparer.Ordinal);
+
+        // 一个变化形式可能被多个词头认领（found 既是 find 的过去式，也是动词 found）。
+        // 实测 74 例，占 0.3%。裁决规则：归给更常用的那个词头——用户输入一个
+        // 有歧义的形式时，命中常用词的概率本来就更大。词频相同（含双方都未知）时
+        // 按词头字典序，保证同一份源数据每次导入结果一致。
+        var claims = new Dictionary<string, (long WordId, int Frequency, string Headword)>(StringComparer.Ordinal);
+
+        var frequencies = 0;
+        foreach (var (id, normalized) in words)
+        {
+            var frequency = index.Frequency(normalized);
+            if (frequency > 0)
+            {
+                frequencies++;
+            }
+
+            foreach (var form in index.Forms(normalized))
+            {
+                // 已经是词头的形式不需要映射：直接查就查得到，
+                // 而且它自己的释义比"某个词的过去式"更准确。
+                if (known.Contains(form))
+                {
+                    continue;
+                }
+
+                if (claims.TryGetValue(form, out var held) && !Better(frequency, normalized, held))
+                {
+                    continue;
+                }
+
+                claims[form] = (id, frequency, normalized);
+            }
+        }
+
+        using var transaction = connection.BeginTransaction();
+        using (var update = connection.CreateCommand())
+        {
+            update.Transaction = transaction;
+            update.CommandText = "UPDATE words SET frequency=$f WHERE id=$id;";
+            var f = update.Parameters.Add("$f", SqliteType.Integer);
+            var id = update.Parameters.Add("$id", SqliteType.Integer);
+            foreach (var (wordId, normalized) in words)
+            {
+                var frequency = index.Frequency(normalized);
+                if (frequency <= 0)
+                {
+                    continue;
+                }
+
+                f.Value = frequency;
+                id.Value = wordId;
+                update.ExecuteNonQuery();
+            }
+        }
+
+        using (var insert = connection.CreateCommand())
+        {
+            insert.Transaction = transaction;
+            insert.CommandText = "INSERT OR IGNORE INTO word_forms(form, word_id) VALUES($form, $id);";
+            var form = insert.Parameters.Add("$form", SqliteType.Text);
+            var id = insert.Parameters.Add("$id", SqliteType.Integer);
+            foreach (var (text, claim) in claims)
+            {
+                form.Value = text;
+                id.Value = claim.WordId;
+                insert.ExecuteNonQuery();
+            }
+        }
+
+        transaction.Commit();
+        return (frequencies, claims.Count);
+
+        // 更常用的赢；都未知或并列时按词头字典序，保证可重现。
+        static bool Better(int frequency, string headword, (long WordId, int Frequency, string Headword) held)
+        {
+            var mine = frequency > 0 ? frequency : int.MaxValue;
+            var theirs = held.Frequency > 0 ? held.Frequency : int.MaxValue;
+            return mine != theirs
+                ? mine < theirs
+                : string.CompareOrdinal(headword, held.Headword) < 0;
+        }
     }
 
     private static int CalculateRichness(string json, ContentExtractor.ExtractedContent content) =>
@@ -283,7 +402,18 @@ public sealed class DictionaryDatabaseBuilder
                 id INTEGER PRIMARY KEY,
                 headword TEXT NOT NULL,
                 normalized TEXT NOT NULL UNIQUE,
-                canonical_entry_id INTEGER
+                canonical_entry_id INTEGER,
+
+                -- ECDICT 的词频排名，越小越常用；0 表示未知（也表示没接词频数据）。
+                -- 排序时 0 必须垫底，不能当成"最常用"。
+                frequency INTEGER NOT NULL DEFAULT 0
+            );
+
+            -- 词形变化 → 词头。库里的词头基本都是原形，用户输入 cancelled 本来
+            -- 一无所获；这张表让它落到 cancel 上。form 已归一化。
+            CREATE TABLE word_forms(
+                form TEXT PRIMARY KEY,
+                word_id INTEGER NOT NULL REFERENCES words(id)
             );
             CREATE TABLE entries(
                 id INTEGER PRIMARY KEY,
@@ -313,6 +443,10 @@ public sealed class DictionaryDatabaseBuilder
             -- 首屏的浏览列表按「短词优先」排序。没有这条表达式索引就要对两万三千行
             -- 全表扫描加排序（实测 91ms），有了它是 0.3ms，代价 0.4 MiB。
             CREATE INDEX ix_words_browse ON words(length(headword), headword COLLATE NOCASE);
+
+            -- 首屏浏览和同分结果的排序都走词频。0（未知）要排到最后，
+            -- 所以索引和 ORDER BY 都带上那个 CASE 的等价写法。
+            CREATE INDEX ix_words_frequency ON words(frequency) WHERE frequency > 0;
             CREATE INDEX ix_entries_word_id ON entries(word_id);
             CREATE INDEX ix_book_words_word_id ON book_words(word_id);
             CREATE INDEX ix_book_words_book_rank ON book_words(book_id, rank);
@@ -566,7 +700,7 @@ public sealed class DictionaryDatabaseBuilder
         {
             command.CommandText = """
                 INSERT INTO meta(key, value) VALUES
-                    ('schema_version', '6'),
+                    ('schema_version', '7'),
                     ('generated_at_utc', $generated),
                     ('book_count', $books),
                     ('membership_count', $rows),

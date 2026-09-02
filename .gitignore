@@ -429,6 +429,9 @@ test-results/
 # 用法见 README——克隆 kajweb/dict 到 data/kajweb-dict。
 /data/kajweb-dict/
 
+# 词频与词形变化的来源（ECDICT，63 MiB）。同样是第三方数据、同样只是本地输入。
+/data/ecdict/
+
 # Mac bundle stuff
 # 限定在构建产物目录内：忽略大小写的文件系统（Windows/macOS 默认）上，
 # 裸的 *.app 会匹配到 src/LingoDict.App 这样的项目目录，把整个工程排除掉。

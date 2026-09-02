@@ -60,8 +60,21 @@ public sealed class DictionaryImportTests : IAsyncLifetime
             """,
             Encoding.UTF8);
 
+        // 词频与词形变化：cancel 常用、abruptly 罕见、order 未知（frq=0）。
+        // cancelled/cancels 不是词头，应当登记；order 的复数 orders 同理。
+        var ecdict = Path.Combine(_root, "ecdict.csv");
+        File.WriteAllLines(ecdict,
+        [
+            "word,phonetic,definition,translation,pos,collins,oxford,tag,bnc,frq,exchange,detail,audio",
+            "cancel,,,取消,,,,,900,880,3:cancels/d:cancelled/i:cancelling,,",
+            "abruptly,,,突然地,,,,,9000,7200,,,",
+            "order,,,订单,,,,,0,0,s:orders,,",
+            // 库里没有这个词头，整行应当被忽略而不是凭空造出一个词
+            "unrelated,,,无关,,,,,10,10,s:unrelateds,,",
+        ]);
+
         var output = Path.Combine(_root, "dictionary.db");
-        _result = new DictionaryDatabaseBuilder().Build(source, output);
+        _result = new DictionaryDatabaseBuilder().Build(source, output, frequencySource: ecdict);
         _repository = new SqliteDictionaryRepository(output);
         return Task.CompletedTask;
     }
@@ -104,7 +117,7 @@ public sealed class DictionaryImportTests : IAsyncLifetime
 
         using var version = connection.CreateCommand();
         version.CommandText = "SELECT value FROM meta WHERE key='schema_version';";
-        Assert.Equal("6", version.ExecuteScalar());
+        Assert.Equal("7", version.ExecuteScalar());
     }
 
     [Fact]
@@ -134,6 +147,7 @@ public sealed class DictionaryImportTests : IAsyncLifetime
         [
             "ix_words_headword",
             "ix_words_browse",
+            "ix_words_frequency",
             "ix_entries_word_id",
             "ix_book_words_word_id",
             "ix_book_words_book_rank",
@@ -319,12 +333,16 @@ public sealed class DictionaryImportTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SearchAsync_WithEmptyQueryBrowsesShortestFirst()
+    public async Task SearchAsync_WithEmptyQueryBrowsesCommonWordsFirst()
     {
         var results = await _repository.SearchAsync(string.Empty);
 
-        Assert.Equal(5, results.Count);
-        Assert.Equal("can", results[0].Headword);
+        // 排序规则从「最短优先」换成了「词频优先、未知垫底、同档再按长度」。
+        // 长度只是常用度的粗糙替身：can(3) 比 cancel(6) 短，但首屏该先给 cancel。
+        // 夹具里 cancel=880、abruptly=7200，其余三个没有词频。
+        Assert.Equal(
+            ["cancel", "abruptly", "can", "order", "long-time"],
+            results.Select(x => x.Headword));
     }
 
     [Fact]
@@ -369,6 +387,43 @@ public sealed class DictionaryImportTests : IAsyncLifetime
     public async Task GetWordAsync_ReturnsNullForUnknownWord()
     {
         Assert.Null(await _repository.GetWordAsync(999_999));
+    }
+
+    [Fact]
+    public async Task AnInflectedFormFindsItsHeadword()
+    {
+        // 库里的词头基本是原形。没有 word_forms 时输入 cancelled 一无所获——
+        // 这是这份词频数据最直接的用处。
+        var hits = await _repository.SearchAsync("cancelled");
+
+        Assert.Equal("cancel", hits[0].Headword);
+    }
+
+    [Fact]
+    public async Task TheResolvedHeadwordIsNotDuplicatedFurtherDown()
+    {
+        // cancel 既被词形回退顶到首位，也会被 FTS 命中，去重后只应出现一次
+        var hits = await _repository.SearchAsync("cancels");
+
+        Assert.Single(hits, x => x.Headword == "cancel");
+    }
+
+    [Fact]
+    public async Task FormsThatAreAlreadyHeadwordsAreNotRemapped()
+    {
+        // order 是词头，它自己的释义比"某个词的复数"更准确
+        var hits = await _repository.SearchAsync("order");
+
+        Assert.Equal("order", hits[0].Headword);
+    }
+
+    [Fact]
+    public void FormsOfWordsWeDoNotHaveAreIgnored()
+    {
+        // ECDICT 有 77 万行，绝大多数词头我们没有。它们不该在 word_forms 里
+        // 留下指向不存在词条的记录。
+        Assert.Equal(4, _result.FormCount);   // cancels / cancelled / cancelling / orders
+        Assert.Equal(2, _result.FrequencyCount);  // cancel 与 abruptly；order 的 frq 是 0
     }
 
     private static void WriteArchive(string archivePath, string entryName, string[] lines)
