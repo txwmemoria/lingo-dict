@@ -35,30 +35,15 @@
     <Grid RowDefinitions="Auto,*,Auto">
 
         <Border Grid.Row="0" Background="{DynamicResource BrandInk}" Padding="24,16">
-            <Grid ColumnDefinitions="Auto,20,Auto,*,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,20,*,Auto,Auto">
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="LINGO" FontSize="{DynamicResource FontSizeBrand}" FontWeight="Bold"
                                Foreground="{DynamicResource BrandTitle}" />
                     <TextBlock Text="离线英语词典" FontSize="{DynamicResource FontSizeCaption}" Margin="0,1,0,0"
                                Foreground="{DynamicResource BrandSubtitle}" />
                 </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,10,0"
-                            VerticalAlignment="Center">
-                    <Button Theme="{DynamicResource BorderlessButton}" Classes="nav"
-                            ToolTip.Tip="后退（Alt+← 或鼠标侧键）"
-                            Command="{Binding GoBackCommand}">
-                        <icons:MaterialIcon Kind="ArrowLeft" Width="19" Height="19"
-                                            Foreground="{DynamicResource BrandSubtitle}" />
-                    </Button>
-                    <Button Theme="{DynamicResource BorderlessButton}" Classes="nav"
-                            ToolTip.Tip="前进（Alt+→ 或鼠标侧键）"
-                            Command="{Binding GoForwardCommand}">
-                        <icons:MaterialIcon Kind="ArrowRight" Width="19" Height="19"
-                                            Foreground="{DynamicResource BrandSubtitle}" />
-                    </Button>
-                </StackPanel>
 
-                <TextBox Grid.Column="3" x:Name="SearchBox" Classes="search"
+                <TextBox Grid.Column="2" x:Name="SearchBox" Classes="search"
                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                          PlaceholderText="输入英文单词或中文释义…（↑↓ 选择，Ctrl+F 聚焦，Esc 清空）"
                          MaxWidth="760" HorizontalAlignment="Stretch">
@@ -67,13 +52,13 @@
                                             Foreground="{DynamicResource SearchPlaceholder}" />
                     </TextBox.InnerLeftContent>
                 </TextBox>
-                <Button Grid.Column="4" Margin="16,0,0,0" ToolTip.Tip="音标表 · 听音辨词"
+                <Button Grid.Column="3" Margin="16,0,0,0" ToolTip.Tip="音标表 · 听音辨词"
                         Theme="{DynamicResource BorderlessButton}"
                         Command="{Binding OpenPhoneticsCommand}">
                     <icons:MaterialIcon Kind="AlphabeticalVariant" Width="20" Height="20"
                                         Foreground="{DynamicResource BrandSubtitle}" />
                 </Button>
-                <Button Grid.Column="5" Margin="4,0,0,0" ToolTip.Tip="设置"
+                <Button Grid.Column="4" Margin="4,0,0,0" ToolTip.Tip="设置"
                         Theme="{DynamicResource BorderlessButton}"
                         Command="{Binding OpenSettingsCommand}">
                     <icons:MaterialIcon Kind="CogOutline" Width="20" Height="20"
@@ -384,6 +369,34 @@
                     <!-- 右侧留出滚动条的宽度，否则会压住收藏/加入学习按钮 -->
                     <StackPanel MaxWidth="{Binding DetailMaxWidth}" Margin="0,0,14,0"
                                 IsVisible="{Binding SelectedWord, Converter={x:Static ObjectConverters.IsNotNull}}">
+
+                        <!--
+                            历史回退。原来是顶栏两个光秃秃的箭头，和下面那对
+                            「上一个 / 下一个」混得厉害——两者都是「在词之间移动」，
+                            但一个说清了自己是谁，另一个没有。
+
+                            现在写出目的地：「返回 cancel」不可能被看成「上一个词」。
+                            只在真有历史时出现，所以也不会再有点不动的死按钮。
+                            前进用得少，只在可用时跟一个箭头，目的地放 tooltip。
+                        -->
+                        <StackPanel Orientation="Horizontal" Spacing="2" Margin="0,0,0,10"
+                                    IsVisible="{Binding CanGoBack}">
+                            <Button Theme="{DynamicResource BorderlessButton}" Padding="6,2"
+                                    ToolTip.Tip="后退（Alt+← 或鼠标侧键）"
+                                    Command="{Binding GoBackCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <icons:MaterialIcon Kind="ArrowLeft" Width="14" Height="14" />
+                                    <TextBlock Text="{Binding BackLabel}" VerticalAlignment="Center"
+                                               FontSize="{DynamicResource FontSizeCaption}" />
+                                </StackPanel>
+                            </Button>
+                            <Button Theme="{DynamicResource BorderlessButton}" Padding="6,2"
+                                    ToolTip.Tip="{Binding ForwardTip}"
+                                    IsVisible="{Binding CanGoForward}"
+                                    Command="{Binding GoForwardCommand}">
+                                <icons:MaterialIcon Kind="ArrowRight" Width="14" Height="14" />
+                            </Button>
+                        </StackPanel>
 
                         <!--
                             逐个看词时最有用的其实是中间那句「37 / 1200」——

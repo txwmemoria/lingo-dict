@@ -20,35 +20,31 @@ namespace LingoDict.App.Tests;
 public sealed class MainWindowBindingTests
 {
     [AvaloniaFact]
-    public void NavigationArrows_LookDeadWhenTheyAreDead()
+    public void HistoryBack_NamesWhereItGoesAndStaysHiddenUntilThereIsHistory()
     {
         var (window, viewModel, _, _, _) = Show();
         Pump();
 
-        var arrows = window.GetVisualDescendants()
-            .OfType<Button>()
-            .Where(x => x.Classes.Contains("nav"))
-            .ToList();
-        Assert.Equal(2, arrows.Count);
+        static IEnumerable<TextBlock> Texts(Window w) => w.GetVisualDescendants().OfType<TextBlock>();
 
-        // 刚启动没有历史，两个箭头都点不动——那就得看得出来点不动。
-        // 图标自己写死了 Foreground，会盖掉按钮的禁用前景色，所以禁用态
-        // 只能压在按钮的 Opacity 上；这条断言就是钉住那个 :disabled 样式。
-        Assert.All(arrows, x => Assert.False(x.IsEffectivelyEnabled));
-        Assert.All(arrows, x => Assert.True(x.Opacity < 0.5, $"禁用的箭头还是 {x.Opacity:0.00} 不透明"));
+        // 一进来没有历史，回退入口整个不出现——不是灰着，是没有。
+        // 原来它是顶栏两个常驻的箭头，没历史时照样满亮，看着能点、点了没反应。
+        Assert.Empty(viewModel.BackLabel);
+        Assert.DoesNotContain(Texts(window), x => x.Text?.StartsWith("返回", StringComparison.Ordinal) == true);
 
-        // 点进两个词：后退可用，前进仍然不可用——两者必须长得不一样
         viewModel.SelectedSearchResult = viewModel.SearchResults[0];
         Pump();
         viewModel.SelectedSearchResult = viewModel.SearchResults[1];
         Pump();
 
-        var back = arrows[0];
-        var forward = arrows[1];
-        Assert.True(back.IsEffectivelyEnabled);
-        Assert.False(forward.IsEffectivelyEnabled);
-        Assert.Equal(1.0, back.Opacity);
-        Assert.True(forward.Opacity < back.Opacity);
+        // 写出目的地，这样它和「上一个 / 下一个」不可能被看成一回事：
+        // 一个是「我从 cancel 来的」，一个是「这个列表的相邻词」。
+        Assert.Equal($"返回 {viewModel.SearchResults[0].Headword}", viewModel.BackLabel);
+        Assert.Contains(Texts(window), x => x.Text == viewModel.BackLabel);
+
+        // 两套导航同时在场，各说各的
+        Assert.Contains(Texts(window), x => x.Text == "上一个");
+        Assert.Contains(Texts(window), x => x.Text == "下一个");
     }
 
     [AvaloniaFact]

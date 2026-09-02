@@ -298,6 +298,23 @@ public partial class MainViewModel : ViewModelBase
 
     public bool CanGoForward => _forward.Count > 0;
 
+    /// <summary>
+    /// 后退按钮上的字，写明要回到哪个词。
+    /// </summary>
+    /// <remarks>
+    /// 这个应用里有两套「在词之间移动」：历史（我从哪儿来）和列表位置
+    /// （这本书的上一个词）。原来历史是顶栏两个光秃秃的箭头，列表位置
+    /// 是详情页里带文字和「37 / 1200」的按钮——一个说清了自己是谁，
+    /// 另一个没有，于是必然被混为一谈。
+    ///
+    /// 把目的地写进按钮就没这个问题了：「返回 cancel」不可能被看成「上一个词」。
+    /// </remarks>
+    public string BackLabel => _back.Count > 0 ? $"返回 {_back.Peek().Headword}" : string.Empty;
+
+    /// <summary>前进按钮的提示。它只是个箭头，目的地放在 tooltip 里。</summary>
+    public string ForwardTip =>
+        _forward.Count > 0 ? $"前进到 {_forward.Peek().Headword}（Alt+→ 或鼠标侧键）" : string.Empty;
+
     public string FavoriteGlyph => IsFavorite ? "★ 已收藏" : "☆ 收藏";
 
     public string StudyGlyph => IsInStudy ? "✓ 学习中" : "+ 加入学习";
@@ -1092,6 +1109,8 @@ public partial class MainViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(CanGoBack));
         OnPropertyChanged(nameof(CanGoForward));
+        OnPropertyChanged(nameof(BackLabel));
+        OnPropertyChanged(nameof(ForwardTip));
         GoBackCommand.NotifyCanExecuteChanged();
         GoForwardCommand.NotifyCanExecuteChanged();
     }

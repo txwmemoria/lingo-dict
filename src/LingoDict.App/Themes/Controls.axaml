@@ -120,27 +120,6 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
-    <!--
-        顶栏的后退 / 前进。
-
-        两个毛病一起改：
-
-        一、**禁用态看不出来。** 图标自己写死了 Foreground，把按钮的禁用前景色
-        盖掉了，于是没有历史时两个箭头照样满亮——看着能点，点了没反应。
-        启动后到你第一次点进某个词之前，它俩一直是死的。
-        改成在按钮上压 Opacity：不管图标把自己画成什么颜色，整个按钮一起暗下去。
-
-        二、**撑得太开。** 用的是 Semi 的默认按钮内边距，19px 的图标被撑成一大块，
-        两个箭头之间隔出一片空白，读起来像两个无关的浮动控件而不是一组导航。
-    -->
-    <Style Selector="Button.nav">
-        <Setter Property="Padding" Value="7,5" />
-        <Setter Property="MinWidth" Value="0" />
-    </Style>
-    <Style Selector="Button.nav:disabled">
-        <Setter Property="Opacity" Value="0.28" />
-    </Style>
-
     <!-- 评分按钮：上行是「刚才记得怎么样」，下行是「下次什么时候再考」 -->
     <Style Selector="Button.grade">
         <Setter Property="Height" Value="52" />
