@@ -37,7 +37,7 @@ zip 生成（`.gitignore` 排除了 `data/kajweb-dict/book/*.zip`），在公开
 
 ```bash
 dotnet run --project src/LingoDict.Importer
-gh release create data-v6 artifacts/dictionary.db --title "词典库 schema 6" --notes "由 LingoDict.Importer 从 data/kajweb-dict 生成，供 release.yml 取用。"
+gh release create data-v7 artifacts/dictionary.db --title "词典库 schema 7" --notes "由 LingoDict.Importer 从 data/kajweb-dict 生成，供 release.yml 取用。"
 ```
 
 标签里的版本号跟着 `SqliteDictionaryRepository.SupportedSchemaVersion` 走。

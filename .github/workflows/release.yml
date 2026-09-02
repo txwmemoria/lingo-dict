@@ -26,7 +26,7 @@ env:
   # 词典库所在的 Release 标签。版本号跟着 SqliteDictionaryRepository 的
   # SupportedSchemaVersion 走——下面每个构建任务都会核对，改了 schema 却忘了
   # 重新上传词典库时，CI 会直接停在那一步，而不是发出一个打不开词典的包。
-  DATA_TAG: data-v6
+  DATA_TAG: data-v7
 
 jobs:
   windows:

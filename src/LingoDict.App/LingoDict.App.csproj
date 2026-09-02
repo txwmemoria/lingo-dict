@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <!-- 用户双击的是这个文件，别让它叫 LingoDict.App.exe -->
     <AssemblyName>LingoDict</AssemblyName>
-    <Version>1.0.0</Version>
+    <Version>0.5.0</Version>
     <RootNamespace>LingoDict.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\lingodict.ico</ApplicationIcon>

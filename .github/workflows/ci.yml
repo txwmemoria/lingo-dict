@@ -17,9 +17,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 只测实际会发布的两个平台。macOS 这一档主要是盯着别写进
-        # Windows-only 的东西——SpeechService 里就有一段 SAPI COM。
-        os: [windows-latest, macos-latest]
+        # 日常 push 只跑 Windows；PR 和手动触发才带上 macOS。
+        #
+        # 仓库是 private，runner 按分钟计费且倍率不同：Windows 2x、macOS 10x。
+        # 实测一次 CI 是 Windows 3m42s（7 计费分钟）+ macOS 4m55s（49 分钟）——
+        # macOS 占了 88%，2000 分钟的免费额度只够 35 次 push。
+        #
+        # 丢掉的覆盖有限：打 tag 时 release.yml 的 macOS job 同样会跑全量测试，
+        # 所以发版之前一定过一遍。想在中途单独验证就手动触发这条 workflow。
+        os: >-
+          ${{ github.event_name == 'push'
+              && fromJSON('["windows-latest"]')
+              || fromJSON('["windows-latest", "macos-latest"]') }}
 
     steps:
       - uses: actions/checkout@v7

@@ -31,7 +31,7 @@ pwsh scripts/publish.ps1
 pwsh scripts/pack-installer.ps1
 ```
 
-产出 `artifacts/LingoDict-1.0.0-win-x64-Setup.exe`，约 102 MiB（226 MiB 走 lzma2/max + solid）。
+产出 `artifacts/LingoDict-0.5.0-win-x64-Setup.exe`，约 102 MiB（226 MiB 走 lzma2/max + solid）。
 
 | | |
 | --- | --- |
@@ -110,7 +110,7 @@ pwsh scripts/publish.ps1 -Runtime osx-arm64 -NoGrammar
 pwsh scripts/pack-macos.ps1 -PublishDir artifacts/publish/osx-arm64
 ```
 
-产出 `artifacts/LingoDict-1.0.0-osx-arm64.dmg`。`.app` 是照约定摆出来的目录：
+产出 `artifacts/LingoDict-0.5.0-osx-arm64.dmg`。`.app` 是照约定摆出来的目录：
 
 ```
 LingoDict.app/Contents/
