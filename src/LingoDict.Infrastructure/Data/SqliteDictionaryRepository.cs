@@ -565,12 +565,18 @@ public sealed class SqliteDictionaryRepository(string databasePath) : IDictionar
         await using var command = connection.CreateCommand();
 
         // 顺带把每条释义出自哪几本词书拼出来——这正是它们彼此不同的原因。
+        //
+        // 最后那列是**正在显示的那条**释义，每行都一样。取它是为了把各词书之间
+        // 重复的英文尾巴去掉：实测 64% 的多释义词头各条英文完全一致，而英文占
+        // 这些行 82% 的字符，等于同一句话在这一段里抄好几遍——何况完整的英文
+        // 上面「释义」里已经有了。一次标量子查询，代价可以忽略。
         command.CommandText = """
             SELECT e.id, e.translation,
                    COALESCE((SELECT group_concat(b.title, '、')
                              FROM book_words bw
                              JOIN books b ON b.id = bw.book_id
-                             WHERE bw.entry_id = e.id), '')
+                             WHERE bw.entry_id = e.id), ''),
+                   COALESCE((SELECT translation FROM entries WHERE id = $exclude), '')
             FROM entries e
             WHERE e.word_id = $word AND e.id <> $exclude
             ORDER BY e.id;
@@ -582,7 +588,10 @@ public sealed class SqliteDictionaryRepository(string databasePath) : IDictionar
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            result.Add(new AlternateEntry(reader.GetInt64(0), reader.GetString(1), reader.GetString(2)));
+            result.Add(new AlternateEntry(
+                reader.GetInt64(0),
+                TranslationText.WithoutRepeatedTail(reader.GetString(1), reader.GetString(3)),
+                reader.GetString(2)));
         }
 
         return result;

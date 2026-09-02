@@ -205,6 +205,35 @@ public sealed class SearchLatencyTests
         Assert.True(off < 0 || cancel < off, "off 排到了 cancel 前面：" + string.Join(", ", hits.Select(x => x.Headword)));
     }
 
+    [SkippableFact]
+    public async Task RealDatabase_AlternateEntriesDropTheRepeatedEnglish()
+    {
+        Skip.If(Database is null, Missing);
+        var repo = new SqliteDictionaryRepository(Database!);
+
+        var word = await repo.FindByHeadwordAsync("abolish");
+        Skip.If(word is null, "这份词典库里没有 abolish");
+
+        var detail = await repo.GetWordAsync(word!.Id, word.EntryId);
+        var alternates = await repo.GetAlternateEntriesAsync(word.Id, word.EntryId);
+        Skip.If(alternates.Count < 2, "abolish 在这份库里只有一条释义");
+
+        // abolish 是截图里那个例子：五本词书给的英文一模一样，
+        // 中文写法各不相同（废除 / 彻底废除，废止 / 废止, 废除 / …）。
+        // 完整的英文就在上面「释义」里，这一段重复它没有意义。
+        var shared = detail!.Translations[0];
+        foreach (var alternate in alternates)
+        {
+            Assert.DoesNotContain("to officially end a law", alternate.Translation, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("to officially end a law", shared, StringComparison.Ordinal);
+
+        // 中文那部分必须原样留着——它才是这一段存在的理由
+        Assert.Contains(alternates, x => x.Translation.Contains('废', StringComparison.Ordinal));
+        Assert.All(alternates, x => Assert.NotEmpty(x.Translation.Trim()));
+    }
+
     private static string? Locate(string relative)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
