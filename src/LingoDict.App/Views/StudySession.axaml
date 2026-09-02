@@ -1,0 +1,234 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LingoDict.App.ViewModels"
+             xmlns:models="using:LingoDict.Core.Models"
+             xmlns:icons="using:Material.Icons.Avalonia"
+             x:Class="LingoDict.App.Views.StudySession"
+             x:DataType="vm:StudyViewModel">
+
+    <!--
+        同一份卡片界面同时用在左栏和全屏专注模式里，两处都必须是活的
+        （能评分、能撤销），所以只能抽成控件复用，不能各写一份。
+        专注模式加 Classes="focus"，差异全部由 Controls.axaml 里的样式给出。
+    -->
+    <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="0,10,0,0">
+
+            <StackPanel Spacing="10">
+                <!--
+                    词书选择和专注入口并排一行。专注模式原来是底下一个小字链接，
+                    但左栏只有 360px、卡片挤在里面，它其实是这一页最该被看见的出口。
+                -->
+                <Grid ColumnDefinitions="*,Auto" Classes="session-chrome">
+                    <ComboBox ItemsSource="{Binding Books}" SelectedItem="{Binding SelectedBook}"
+                              HorizontalAlignment="Stretch"
+                              IsVisible="{Binding Books.Count}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:StudyBook">
+                                <TextBlock Text="{Binding Title}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Grid.Column="1" Margin="8,0,0,0"
+                            Theme="{DynamicResource BorderlessButton}"
+                            ToolTip.Tip="铺满窗口专心复习（Esc 退出）"
+                            Command="{Binding ToggleFocusCommand}"
+                            IsVisible="{Binding !IsFocusMode}">
+                        <icons:MaterialIcon Kind="ArrowExpandAll" Width="18" Height="18" />
+                    </Button>
+                </Grid>
+
+                <!--
+                    今天的进度。背单词时唯一真正关心的是「还剩多少」，
+                    所以这里只讲这一件事；到期/未学/总数那些拆解挪进 tooltip。
+                -->
+                <StackPanel Spacing="6" ToolTip.Tip="{Binding QueueDetail}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding TodayLabel}" FontWeight="SemiBold"
+                                   FontSize="{DynamicResource FontSizeCompact}" />
+                        <icons:MaterialIcon Grid.Column="1" Kind="CheckCircle" Width="15" Height="15"
+                                            Foreground="{DynamicResource SemiColorSuccess}"
+                                            IsVisible="{Binding IsTodayDone}" />
+                    </Grid>
+                    <ProgressBar Value="{Binding TodayProgress}" Minimum="0" Maximum="100" Height="4" />
+                </StackPanel>
+            </StackPanel>
+
+            <TextBlock Grid.Row="1" Text="{Binding Message}" Classes="muted"
+                       TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center"
+                       MaxWidth="320" TextAlignment="Center" LineHeight="22"
+                       IsVisible="{Binding CurrentCard, Converter={x:Static ObjectConverters.IsNull}}" />
+
+            <Grid Grid.Row="1" Classes="card-stage" RowDefinitions="*,Auto" Margin="0,14,0,0"
+                  IsVisible="{Binding CurrentCard, Converter={x:Static ObjectConverters.IsNotNull}}">
+
+                <Border Background="{DynamicResource SemiColorFill0}"
+                        BorderBrush="{DynamicResource SemiColorBorder}" BorderThickness="1"
+                        CornerRadius="14" Padding="24">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+                        <TextBlock Classes="card-headword" Text="{Binding CurrentCard.Headword}" FontWeight="Bold"
+                                   HorizontalAlignment="Center" />
+
+                        <!--
+                            卡片上原本连朗读都没有，只能干看着拼写回忆。
+                            翻面前就能听：听音回忆本来就是一种复习方式，不算作弊。
+                            音标同详情页，逐音可点——正好在最需要的时候（想不起来怎么读）。
+                        -->
+                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                            <Button Theme="{DynamicResource BorderlessButton}"
+                                    Padding="0" MinWidth="0" ToolTip.Tip="朗读"
+                                    IsVisible="{Binding CanSpeak}"
+                                    Command="{Binding SpeakCommand}">
+                                <icons:MaterialIcon Kind="VolumeHigh" Width="17" Height="17"
+                                                    Foreground="{DynamicResource SemiColorPrimary}" />
+                            </Button>
+                            <ItemsControl ItemsSource="{Binding CardPhonemes}" Classes="phonetic" />
+                        </StackPanel>
+                        <Border Height="1" Width="48" Margin="0,10"
+                                Background="{DynamicResource SemiColorBorder}"
+                                IsVisible="{Binding IsAnswerVisible}" />
+                        <TextBlock Classes="card-answer" Text="{Binding CurrentCard.Translation}"
+                                   TextWrapping="Wrap" TextAlignment="Center" MaxWidth="320"
+                                   IsVisible="{Binding IsAnswerVisible}" />
+                    </StackPanel>
+                </Border>
+
+                <Button Grid.Row="1" Theme="{DynamicResource SolidButton}" Classes="Primary" Content="显示答案"
+                        Command="{Binding RevealCommand}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Margin="0,14,0,0" Height="42"
+                        IsVisible="{Binding !IsAnswerVisible}" />
+
+                <!--
+                    评分行。这里必须先把问题问出来：四个按钮是在回答
+                    「刚才想起来了吗」，而不是在给这个词的难度打标签。
+                    少了这句话，「重来 / 困难 / 良好 / 简单」看着就是四个没头没尾的词。
+
+                    每个按钮两行：上面是你刚才记得怎么样，下面是它下次什么时候再出现。
+                    挤成「良好 · 1 天」一行时，一个间隔号把两个完全不同的东西连在一起，
+                    没人看得懂那是什么意思。
+                -->
+                <StackPanel Grid.Row="1" Margin="0,14,0,0" Spacing="8"
+                            IsVisible="{Binding IsAnswerVisible}">
+                    <!-- 左栏只有 360px，不换行会被截掉半句，问题就问不出来了 -->
+                    <TextBlock Classes="muted" HorizontalAlignment="Center"
+                               TextWrapping="Wrap" TextAlignment="Center"
+                               FontSize="{DynamicResource FontSizeCompact}"
+                               Text="刚才想起来了吗？选一个，它决定这个词下次什么时候再出现" />
+
+                    <UniformGrid Columns="4">
+                        <Button Command="{Binding GradeCommand}"
+                                CommandParameter="{x:Static models:ReviewGrade.Again}"
+                                ToolTip.Tip="完全没想起来。这个词会留在今天的队列里，等会儿再考一次。"
+                                Classes="grade" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="{Binding AgainLabel}" Classes="grade-name" />
+                                <TextBlock Text="{Binding AgainNext}" Classes="grade-next" />
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding GradeCommand}"
+                                CommandParameter="{x:Static models:ReviewGrade.Hard}"
+                                ToolTip.Tip="想起来了，但很吃力、犹豫了好一会儿。下次间隔会缩短。"
+                                Classes="grade" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="{Binding HardLabel}" Classes="grade-name" />
+                                <TextBlock Text="{Binding HardNext}" Classes="grade-next" />
+                            </StackPanel>
+                        </Button>
+                        <!-- 良好是最常用的一档，给它主按钮的分量 -->
+                        <Button Theme="{DynamicResource SolidButton}" Classes="Primary grade"
+                                Command="{Binding GradeCommand}"
+                                CommandParameter="{x:Static models:ReviewGrade.Good}"
+                                ToolTip.Tip="想起来了，正常水平。多数时候选这个。"
+                                Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="{Binding GoodLabel}" Classes="grade-name" />
+                                <TextBlock Text="{Binding GoodNext}" Classes="grade-next" />
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding GradeCommand}"
+                                CommandParameter="{x:Static models:ReviewGrade.Easy}"
+                                ToolTip.Tip="几乎不用想就答出来了。下次间隔会拉得更长，省下时间给还不熟的词。"
+                                Classes="grade">
+                            <StackPanel>
+                                <TextBlock Text="{Binding EasyLabel}" Classes="grade-name" />
+                                <TextBlock Text="{Binding EasyNext}" Classes="grade-next" />
+                            </StackPanel>
+                        </Button>
+                    </UniformGrid>
+                </StackPanel>
+            </Grid>
+
+            <!--
+                快捷键提示和撤销放在一行，紧贴评分区——撤销的唯一使用时机就是
+                「刚点错了」，藏在配置堆里等于没有。
+            -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+                <TextBlock Text="空格翻面 · 1–4 评分" Classes="faint"
+                           FontSize="{DynamicResource FontSizeCaption}" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Theme="{DynamicResource BorderlessButton}" Padding="6,2"
+                        Command="{Binding UndoCommand}"
+                        IsVisible="{Binding CanUndo}">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <icons:MaterialIcon Kind="UndoVariant" Width="14" Height="14" />
+                        <TextBlock Text="撤销上一次评分" VerticalAlignment="Center"
+                                   FontSize="{DynamicResource FontSizeCaption}" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!--
+                每日上限和近 30 天统计收进折叠区，默认关着。
+                上限是设一次就不动的东西，统计是复盘用的，两者都不属于
+                「正在复习」这条主线——摊开来只是把 360px 的左栏挤乱：
+                原来那两个 NumericUpDown 就换行换得数字和标签对不上。
+            -->
+            <Expander Grid.Row="3" Classes="session-chrome" Margin="0,12,0,0"
+                      HorizontalAlignment="Stretch">
+                <Expander.Header>
+                    <TextBlock Text="每日上限 · 近 30 天" Classes="faint" FontWeight="Normal"
+                               FontSize="{DynamicResource FontSizeCaption}" />
+                </Expander.Header>
+                <StackPanel Spacing="14" Margin="0,8,0,0">
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                        <TextBlock Text="每日新词" Classes="muted" VerticalAlignment="Center"
+                                   FontSize="{DynamicResource FontSizeSmall}" />
+                        <NumericUpDown Grid.Column="1" Value="{Binding NewPerDay}" Minimum="0" Maximum="9999"
+                                       Increment="5" FormatString="0" HorizontalAlignment="Stretch" />
+                        <TextBlock Grid.Row="1" Text="每日复习" Classes="muted" VerticalAlignment="Center"
+                                   FontSize="{DynamicResource FontSizeSmall}" />
+                        <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ReviewPerDay}"
+                                       Minimum="0" Maximum="9999"
+                                       Increment="20" FormatString="0" HorizontalAlignment="Stretch" />
+                    </Grid>
+
+                    <StackPanel Spacing="8" IsVisible="{Binding ReviewedLast30Days}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Classes="faint" FontSize="{DynamicResource FontSizeCaption}"
+                                       Text="近 30 天" VerticalAlignment="Bottom" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                                <TextBlock Classes="faint" FontSize="{DynamicResource FontSizeCaption}"
+                                           Text="{Binding ReviewedLast30Days, StringFormat='共 {0} 张'}" />
+                                <TextBlock Classes="faint" FontSize="{DynamicResource FontSizeCaption}"
+                                           Text="{Binding Accuracy, StringFormat='答对 {0:P0}'}" />
+                            </StackPanel>
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding History}" Height="56">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Rows="1" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:StudyDayBar">
+                                    <Border Height="{Binding Height}" Margin="1,0"
+                                            VerticalAlignment="Bottom" CornerRadius="2"
+                                            Background="{DynamicResource SemiColorPrimary}"
+                                            ToolTip.Tip="{Binding Tooltip}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+    </Grid>
+</UserControl>

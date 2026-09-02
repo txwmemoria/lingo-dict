@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LingoDict.Core\LingoDict.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" />
+  </ItemGroup>
+
+  <!--
+      分词表、标签表、动词词形表随程序集走，不随模型文件走：
+      它们加起来才 1 MB，而且是纯确定性数据——嵌进来单元测试就不依赖任何外部产物。
+      真正大的只有 gector-int8.onnx（129 MB），那个留在 artifacts/ 里另外分发。
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\*.gz" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="LingoDict.Grammar.Tests" />
+  </ItemGroup>
+
+</Project>

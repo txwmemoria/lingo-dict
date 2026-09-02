@@ -1,0 +1,25 @@
+# 统一换行：仓库和工作区一律 LF。没有这条，Windows 与 macOS 协作时
+# 整文件都会显示为改动。显式写 eol=lf 而不是只写 text=auto——后者在
+# Windows 上按 core.eol=native 检出成 CRLF，会把现有文件全部改写一遍。
+* text=auto eol=lf
+
+*.cs        text diff=csharp
+*.csproj    text
+*.axaml     text
+*.md        text
+*.json      text
+*.yml       text
+*.py        text
+*.js        text
+*.manifest  text
+*.gitignore text
+
+# Visual Studio 始终以 CRLF 写解决方案文件，跟着它走以免每次打开都产生改动。
+*.sln       text eol=crlf
+
+# 二进制：不做换行转换，也不参与文本 diff。
+*.zip       binary
+*.db        binary
+*.ico       binary
+*.png       binary
+*.pdf       binary

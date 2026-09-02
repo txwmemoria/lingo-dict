@@ -1,0 +1,134 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LingoDict.App.ViewModels"
+             xmlns:icons="using:Material.Icons.Avalonia"
+             x:Class="LingoDict.App.Views.WritingCheck"
+             x:DataType="vm:WritingViewModel">
+
+    <!--
+        写作检查页。刻意不做「一键全改」：模型在评测集上 81%，
+        剩下两成必须由用户自己判断，所以每条建议都单独给「查词」和「采纳」，
+        查词直接在右侧打开词条，让词典的例句来作依据。
+    -->
+    <!-- 上边距比别的页大：其他页第一个元素是列表，行内边距自带留白，这里是个贴边的输入框 -->
+    <Panel Margin="0,18,0,0">
+
+        <!--
+            没装模型时的整页替代。不做成一句灰字加一个禁用的输入框——
+            那样用户只会以为功能坏了。把「为什么没有」和「怎么装上」都摆出来。
+        -->
+        <StackPanel IsVisible="{Binding !IsAvailable}" Spacing="14" VerticalAlignment="Center">
+            <icons:MaterialIcon Kind="CloudDownloadOutline" Classes="large" HorizontalAlignment="Center" />
+
+            <TextBlock Text="{Binding ModelNotice}" Classes="muted" TextWrapping="Wrap"
+                       FontSize="{DynamicResource FontSizeCompact}" TextAlignment="Center" />
+
+            <StackPanel Spacing="6" IsVisible="{Binding IsInstalling}">
+                <ProgressBar Value="{Binding InstallPercent}" Minimum="0" Maximum="100" Height="6" />
+            </StackPanel>
+
+            <TextBlock Text="{Binding InstallStatus}" Classes="faint" TextWrapping="Wrap"
+                       FontSize="{DynamicResource FontSizeCaption}" TextAlignment="Center"
+                       IsVisible="{Binding InstallStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <WrapPanel HorizontalAlignment="Center" ItemSpacing="8" LineSpacing="8">
+                <Button Theme="{DynamicResource SolidButton}" Classes="Primary"
+                        Content="{Binding ModelSize, StringFormat='下载模型（{0}）'}"
+                        IsVisible="{Binding CanDownload}"
+                        Command="{Binding DownloadModelCommand}" />
+                <Button Content="从本地文件导入…" Command="{Binding ImportModelCommand}" />
+                <Button Content="取消" IsVisible="{Binding IsInstalling}"
+                        Command="{Binding CancelInstallCommand}" />
+            </WrapPanel>
+
+            <TextBlock Classes="faint" TextWrapping="Wrap" TextAlignment="Center"
+                       FontSize="{DynamicResource FontSizeCaption}"
+                       Text="也可以按 README 的「装模型」一节自己跑 eval/gector_export.py 生成 gector-int8.onnx，再从这里导入。" />
+        </StackPanel>
+
+        <Grid RowDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding IsAvailable}">
+
+            <!--
+                Padding 得自己给：Semi 的默认值是按单行框调的，靠垂直居中把文字撑在中间；
+                多行框改成顶部对齐之后，那点上边距就没了，文字直接贴着上边框。
+            -->
+            <TextBox Grid.Row="0"
+                     Text="{Binding Text}"
+                     AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="150" MaxHeight="260"
+                     VerticalContentAlignment="Top"
+                     Padding="12,10"
+                     PlaceholderText="写或粘贴一段英文…" />
+
+            <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,10,0,0">
+                <TextBlock Text="{Binding Message}" Classes="muted"
+                           FontSize="{DynamicResource FontSizeCaption}"
+                           TextWrapping="Wrap" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Top">
+                    <Button Theme="{DynamicResource BorderlessButton}" ToolTip.Tip="填一段典型的中式英语试试"
+                            Command="{Binding LoadSampleCommand}">
+                        <icons:MaterialIcon Kind="TextBoxOutline" />
+                    </Button>
+                    <Button Theme="{DynamicResource BorderlessButton}" ToolTip.Tip="清空"
+                            Command="{Binding ClearCommand}">
+                        <icons:MaterialIcon Kind="Close" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <ProgressBar Grid.Row="2" IsIndeterminate="True" Height="2" Margin="0,8,0,0"
+                         IsVisible="{Binding IsChecking}" />
+
+            <ItemsControl Grid.Row="3" ItemsSource="{Binding Suggestions}" Margin="0,12,0,0">
+                <ItemsControl.Template>
+                    <ControlTemplate>
+                        <ScrollViewer>
+                            <ItemsPresenter />
+                        </ScrollViewer>
+                    </ControlTemplate>
+                </ItemsControl.Template>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:WritingSuggestion">
+                        <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="10"
+                                Padding="12,10" Margin="0,0,0,8">
+                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Border Background="{DynamicResource SemiColorFill1}" CornerRadius="6" Padding="6,1">
+                                        <TextBlock Text="{Binding Category}" Classes="faint"
+                                                   FontSize="{DynamicResource FontSizeCaption}" />
+                                    </Border>
+                                    <TextBlock Text="{Binding Action}" FontWeight="SemiBold"
+                                               FontSize="{DynamicResource FontSizeCompact}"
+                                               VerticalAlignment="Center" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <!-- 把握度摆出来：这是「建议」不是判决，用户有权知道模型有多犹豫 -->
+                                <TextBlock Grid.Column="1" Text="{Binding Confidence}" Classes="faint"
+                                           FontSize="{DynamicResource FontSizeCaption}" VerticalAlignment="Center" />
+
+                                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Context}"
+                                           Classes="muted" FontSize="{DynamicResource FontSizeCaption}"
+                                           TextWrapping="Wrap" Margin="0,6,0,0" />
+
+                                <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
+                                            Spacing="4" HorizontalAlignment="Right" Margin="0,6,0,0">
+                                    <Button Theme="{DynamicResource BorderlessButton}" Content="查词"
+                                            FontSize="{DynamicResource FontSizeCaption}"
+                                            IsVisible="{Binding CanLookup}"
+                                            ToolTip.Tip="在右侧打开词条，拿例句核对"
+                                            Command="{ReflectionBinding $parent[ItemsControl].DataContext.LookupCommand}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Theme="{DynamicResource BorderlessButton}" Content="采纳"
+                                            FontSize="{DynamicResource FontSizeCaption}"
+                                            Command="{ReflectionBinding $parent[ItemsControl].DataContext.AcceptCommand}"
+                                            CommandParameter="{Binding}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+    </Panel>
+</UserControl>

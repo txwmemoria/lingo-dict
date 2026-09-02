@@ -1,0 +1,124 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LingoDict.App.ViewModels"
+        xmlns:icons="using:Material.Icons.Avalonia"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="LingoDict.App.Views.PhoneticsWindow"
+        x:DataType="vm:PhoneticsViewModel"
+        Title="音标"
+        Icon="/Assets/lingodict.ico"
+        Width="760" Height="720"
+        WindowStartupLocation="CenterOwner">
+
+    <Design.DataContext>
+        <vm:PhoneticsViewModel />
+    </Design.DataContext>
+
+    <Border Classes="card" Margin="16" Padding="20,16">
+        <TabControl>
+
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <icons:MaterialIcon Kind="AlphabeticalVariant" />
+                        <TextBlock Text="音标表" VerticalAlignment="Center" />
+                    </StackPanel>
+                </TabItem.Header>
+
+                <ScrollViewer Margin="0,12,0,0">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="faint" TextWrapping="Wrap"
+                                   FontSize="{DynamicResource FontSizeCaption}"
+                                   Text="点任一个音，朗读它的例词。记音标的唯一办法是把符号绑到一个你已经会读的词上。" />
+
+                        <TextBlock Classes="section-title" Text="单元音" />
+                        <ItemsControl ItemsSource="{Binding Vowels}" Classes="phoneme-grid" />
+
+                        <TextBlock Classes="section-title" Text="双元音" />
+                        <ItemsControl ItemsSource="{Binding Diphthongs}" Classes="phoneme-grid" />
+
+                        <TextBlock Classes="section-title" Text="辅音" />
+                        <ItemsControl ItemsSource="{Binding Consonants}" Classes="phoneme-grid" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <icons:MaterialIcon Kind="EarHearing" />
+                        <TextBlock Text="听音辨词" VerticalAlignment="Center" />
+                    </StackPanel>
+                </TabItem.Header>
+
+                <!--
+                    练的全是中文母语者分不清的对立（长短元音、θ/s、v/w、n/ŋ 韵尾、l/r）。
+                    汉语里本来就区分的音练了是白练。
+                -->
+                <Grid RowDefinitions="Auto,*,Auto" Margin="0,12,0,0">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="faint" TextWrapping="Wrap"
+                                   FontSize="{DynamicResource FontSizeCaption}"
+                                   Text="听一个词，选你听到的那个。听不出区别就读不对——这一步比认符号更要紧。" />
+                        <TextBlock Grid.Column="1" Text="{Binding Score}" Classes="muted"
+                                   FontSize="{DynamicResource FontSizeCompact}" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <StackPanel Grid.Row="1" Spacing="18" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <Button Theme="{DynamicResource SolidButton}" Classes="Primary"
+                                HorizontalAlignment="Center" Padding="22,12"
+                                Command="{Binding ReplayCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <!-- 图标默认是 SemiColorText2（深灰），压在品牌蓝上几乎看不见 -->
+                                <icons:MaterialIcon Kind="VolumeHigh" Width="20" Height="20"
+                                                    Foreground="{Binding $parent[Button].Foreground}" />
+                                <TextBlock Text="再听一遍" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <TextBlock Text="{Binding Pair.Focus}" Classes="faint" HorizontalAlignment="Center"
+                                   FontSize="{DynamicResource FontSizeCaption}" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="14" HorizontalAlignment="Center">
+                            <Button Classes="choice" Content="{Binding Pair.Left}"
+                                    Command="{Binding ChooseCommand}" CommandParameter="{Binding Pair.Left}" />
+                            <Button Classes="choice" Content="{Binding Pair.Right}"
+                                    Command="{Binding ChooseCommand}" CommandParameter="{Binding Pair.Right}" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="6" IsVisible="{Binding IsAnswered}" HorizontalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <icons:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
+                                                    Foreground="{DynamicResource SemiColorSuccess}"
+                                                    IsVisible="{Binding WasRight}" />
+                                <icons:MaterialIcon Kind="CloseCircle" Width="18" Height="18"
+                                                    Foreground="{DynamicResource SemiColorDanger}"
+                                                    IsVisible="{Binding !WasRight}" />
+                                <TextBlock FontWeight="SemiBold" VerticalAlignment="Center"
+                                           FontSize="{DynamicResource FontSizeSubtitle}"
+                                           Text="{Binding Answer, StringFormat='念的是 {0}'}" />
+                            </StackPanel>
+                            <!-- 答错时把两个词都摆出来对比，光说「错了」学不到东西 -->
+                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                                <Button Theme="{DynamicResource BorderlessButton}"
+                                        Content="{Binding Pair.Left}" FontSize="{DynamicResource FontSizeCompact}"
+                                        Command="{Binding SpeakCommand}" CommandParameter="{Binding Pair.Left}" />
+                                <TextBlock Text="对比" Classes="faint" VerticalAlignment="Center"
+                                           FontSize="{DynamicResource FontSizeCaption}" />
+                                <Button Theme="{DynamicResource BorderlessButton}"
+                                        Content="{Binding Pair.Right}" FontSize="{DynamicResource FontSizeCompact}"
+                                        Command="{Binding SpeakCommand}" CommandParameter="{Binding Pair.Right}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Button Grid.Row="2" Content="下一个" HorizontalAlignment="Right"
+                            Command="{Binding NextRoundCommand}" />
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+    </Border>
+</Window>

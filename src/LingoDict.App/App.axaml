@@ -1,0 +1,27 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="LingoDict.App.App"
+             xmlns:local="using:LingoDict.App"
+             xmlns:semi="using:Semi.Avalonia"
+             xmlns:icons="using:Material.Icons.Avalonia"
+             RequestedThemeVariant="Default">
+
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://LingoDict/Themes/Tokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <semi:SemiTheme />
+        <icons:MaterialIconStyles />
+        <StyleInclude Source="avares://LingoDict/Themes/Controls.axaml" />
+    </Application.Styles>
+
+</Application>

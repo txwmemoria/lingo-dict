@@ -1,0 +1,55 @@
+{
+  "_note": "中国学习者的经典英语错误，每条一对最小差异句。right 是正确的，wrong 是典型错法。",
+
+  "pairs": [
+    { "cat": "介词", "right": "I arrived in Beijing yesterday.",            "wrong": "I arrived at Beijing yesterday." },
+    { "cat": "介词", "right": "He is good at math.",                        "wrong": "He is good in math." },
+    { "cat": "介词", "right": "It depends on you.",                         "wrong": "It depends of you." },
+    { "cat": "介词", "right": "I listened to music all night.",             "wrong": "I listened music all night." },
+    { "cat": "介词", "right": "She is married to a doctor.",                "wrong": "She is married with a doctor." },
+    { "cat": "介词", "right": "We discussed the problem.",                  "wrong": "We discussed about the problem." },
+    { "cat": "介词", "right": "I will call you in the morning.",            "wrong": "I will call you at the morning." },
+    { "cat": "介词", "right": "He got on the bus.",                         "wrong": "He got in the bus." },
+
+    { "cat": "冠词", "right": "I am a student.",                            "wrong": "I am student." },
+    { "cat": "冠词", "right": "She plays the piano very well.",             "wrong": "She plays piano very well." },
+    { "cat": "冠词", "right": "The sun rises in the east.",                 "wrong": "Sun rises in the east." },
+    { "cat": "冠词", "right": "He is the tallest boy in our class.",        "wrong": "He is tallest boy in our class." },
+    { "cat": "冠词", "right": "I had an interesting idea.",                 "wrong": "I had interesting idea." },
+    { "cat": "冠词", "right": "Life is short.",                             "wrong": "The life is short." },
+
+    { "cat": "可数性", "right": "He gave me some advice.",                  "wrong": "He gave me some advices." },
+    { "cat": "可数性", "right": "I need more information.",                 "wrong": "I need more informations." },
+    { "cat": "可数性", "right": "That is a piece of good news.",            "wrong": "That is a good news." },
+    { "cat": "可数性", "right": "We bought a lot of furniture.",            "wrong": "We bought a lot of furnitures." },
+    { "cat": "可数性", "right": "He has much homework tonight.",            "wrong": "He has many homeworks tonight." },
+
+    { "cat": "主谓一致", "right": "He goes to school by bike.",             "wrong": "He go to school by bike." },
+    { "cat": "主谓一致", "right": "Everyone is here.",                      "wrong": "Everyone are here." },
+    { "cat": "主谓一致", "right": "There are three books on the desk.",     "wrong": "There is three books on the desk." },
+    { "cat": "主谓一致", "right": "My family has moved to Shanghai.",       "wrong": "My family have moved to Shanghai." },
+
+    { "cat": "时态结构", "right": "It took me three hours to write it.",    "wrong": "I took three hours to write it." },
+    { "cat": "时态结构", "right": "I have lived here for five years.",      "wrong": "I live here for five years." },
+    { "cat": "时态结构", "right": "He has been ill since Monday.",          "wrong": "He is ill since Monday." },
+    { "cat": "时态结构", "right": "I was born in 1990.",                    "wrong": "I born in 1990." },
+
+    { "cat": "中式结构", "right": "Although it rained, I still went.",      "wrong": "Although it rained, but I still went." },
+    { "cat": "中式结构", "right": "Because he was ill, he didn't come.",    "wrong": "Because he was ill, so he didn't come." },
+    { "cat": "中式结构", "right": "I like it very much.",                   "wrong": "I very like it." },
+    { "cat": "中式结构", "right": "Welcome to Beijing.",                    "wrong": "Welcome you to Beijing." },
+    { "cat": "中式结构", "right": "There are many people here.",            "wrong": "Here has many people." },
+    { "cat": "中式结构", "right": "I think he is not right.",               "wrong": "I think he is not correct so." },
+
+    { "cat": "词选", "right": "Please turn on the light.",                  "wrong": "Please open the light." },
+    { "cat": "词选", "right": "You should take this medicine twice a day.", "wrong": "You should eat this medicine twice a day." },
+    { "cat": "词选", "right": "I would like a cup of strong tea.",          "wrong": "I would like a cup of thick tea." },
+    { "cat": "词选", "right": "There was heavy rain last night.",           "wrong": "There was big rain last night." },
+    { "cat": "词选", "right": "He made a serious mistake.",                 "wrong": "He did a serious mistake." },
+    { "cat": "词选", "right": "The traffic is heavy this morning.",         "wrong": "The traffic is crowded this morning." },
+
+    { "cat": "分词", "right": "I am interested in history.",                "wrong": "I am interesting in history." },
+    { "cat": "分词", "right": "The film was boring.",                       "wrong": "The film was bored." },
+    { "cat": "分词", "right": "I was surprised by the news.",               "wrong": "I was surprising by the news." }
+  ]
+}

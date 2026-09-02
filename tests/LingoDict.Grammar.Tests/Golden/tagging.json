@@ -1,0 +1,1032 @@
+[
+ {
+  "text": "I arrived in Beijing yesterday.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I arrived at Beijing yesterday.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$REPLACE_in",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He is good at math.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He is good in math.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$REPLACE_at",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "It depends on you.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "It depends of you.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$REPLACE_on",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I listened to music all night.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I listened music all night.",
+  "labels": [
+   "$KEEP",
+   "$APPEND_to",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "She is married to a doctor.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "She is married with a doctor.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$REPLACE_to",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "We discussed the problem.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "We discussed about the problem.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$DELETE",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I will call you in the morning.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I will call you at the morning.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$REPLACE_in",
+   "$REPLACE_this",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He got on the bus.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He got in the bus.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$REPLACE_on",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I am a student.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I am student.",
+  "labels": [
+   "$KEEP",
+   "$APPEND_a",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "She plays the piano very well.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "She plays piano very well.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "The sun rises in the east.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Sun rises in the east.",
+  "labels": [
+   "$TRANSFORM_CASE_LOWER",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He is the tallest boy in our class.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He is tallest boy in our class.",
+  "labels": [
+   "$KEEP",
+   "$APPEND_the",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I had an interesting idea.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I had interesting idea.",
+  "labels": [
+   "$KEEP",
+   "$APPEND_an",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Life is short.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "The life is short.",
+  "labels": [
+   "$DELETE",
+   "$TRANSFORM_CASE_CAPITAL",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He gave me some advice.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He gave me some advices.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$TRANSFORM_AGREEMENT_SINGULAR"
+  ]
+ },
+ {
+  "text": "I need more information.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I need more informations.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$TRANSFORM_AGREEMENT_SINGULAR"
+  ]
+ },
+ {
+  "text": "That is a piece of good news.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "That is a good news.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$DELETE",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "We bought a lot of furniture.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "We bought a lot of furnitures.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He has much homework tonight.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$REPLACE_a",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He has many homeworks tonight.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$REPLACE_a",
+   "$TRANSFORM_AGREEMENT_SINGULAR",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He goes to school by bike.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He go to school by bike.",
+  "labels": [
+   "$KEEP",
+   "$TRANSFORM_VERB_VB_VBZ",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Everyone is here.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Everyone are here.",
+  "labels": [
+   "$KEEP",
+   "$REPLACE_is",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "There are three books on the desk.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "There is three books on the desk.",
+  "labels": [
+   "$KEEP",
+   "$REPLACE_are",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "My family has moved to Shanghai.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "My family have moved to Shanghai.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$REPLACE_has",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "It took me three hours to write it.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I took three hours to write it.",
+  "labels": [
+   "$REPLACE_It",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I have lived here for five years.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I live here for five years.",
+  "labels": [
+   "$APPEND_have",
+   "$TRANSFORM_VERB_VB_VBN",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He has been ill since Monday.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He is ill since Monday.",
+  "labels": [
+   "$KEEP",
+   "$REPLACE_has",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I was born in 1990.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I born in 1990.",
+  "labels": [
+   "$APPEND_was",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Although it rained, I still went.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Although it rained, but I still went.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$DELETE",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Because he was ill, he didn't come.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Because he was ill, so he didn't come.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I like it very much.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I very like it.",
+  "labels": [
+   "$KEEP",
+   "$REPLACE_really",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Welcome to Beijing.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Welcome you to Beijing.",
+  "labels": [
+   "$KEEP",
+   "$DELETE",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "There are many people here.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Here has many people.",
+  "labels": [
+   "$KEEP",
+   "$REPLACE_are",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I think he is not right.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I think he is not correct so.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$DELETE"
+  ]
+ },
+ {
+  "text": "Please turn on the light.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Please open the light.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "You should take this medicine twice a day.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "You should eat this medicine twice a day.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I would like a cup of strong tea.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I would like a cup of thick tea.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "There was heavy rain last night.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "There was big rain last night.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He made a serious mistake.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He did a serious mistake.",
+  "labels": [
+   "$KEEP",
+   "$REPLACE_made",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "The traffic is heavy this morning.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$REPLACE_was",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "The traffic is crowded this morning.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$REPLACE_was",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I am interested in history.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I am interesting in history.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$TRANSFORM_VERB_VBG_VBN",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "The film was boring.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "The film was bored.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$TRANSFORM_VERB_VBN_VBG"
+  ]
+ },
+ {
+  "text": "I was surprised by the news.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I was surprising by the news.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$TRANSFORM_VERB_VBG_VBN",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I don't know.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "It's a well-known problem.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "He said: \"Hello, world!\"",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "The price is $19.99 (about 140 RMB).",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "  leading   and  trailing   spaces  ",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "ALLCAPS and MixedCase and lower",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "naive café résumé",
+  "labels": [
+   "$TRANSFORM_CASE_CAPITAL",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Zhang Wei went to Beijing in 2024.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "supercalifragilisticexpialidocious",
+  "labels": [
+   "$TRANSFORM_CASE_CAPITAL"
+  ]
+ },
+ {
+  "text": "a",
+  "labels": [
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "I",
+  "labels": [
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "e-mail me at foo@bar.com",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "1234567890",
+  "labels": [
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Wo shi zhongguoren.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "Don't—really—do that.",
+  "labels": [
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "100% sure; 50/50 chance.",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "The teacher's students' books",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ },
+ {
+  "text": "xyzzyx qwertyuiop asdfgh",
+  "labels": [
+   "$KEEP",
+   "$KEEP",
+   "$KEEP"
+  ]
+ }
+]

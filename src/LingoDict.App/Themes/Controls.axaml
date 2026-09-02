@@ -1,0 +1,317 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:icons="using:Material.Icons.Avalonia"
+        xmlns:views="using:LingoDict.App.Views"
+        xmlns:vm="using:LingoDict.App.ViewModels">
+
+    <!--
+        只放应用特有的样式。按钮、标签页、输入框、列表等通用控件的观感交给
+        Semi.Avalonia——它把每个控件的 hover/pressed/focus/disabled 都维护好了，
+        自己重写一遍必然会漏状态。
+    -->
+
+    <Style Selector="Window">
+        <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
+        <Setter Property="Background" Value="{DynamicResource SemiColorBackground0}" />
+    </Style>
+
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{DynamicResource SemiColorBackground1}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SemiColorBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="20" />
+    </Style>
+
+    <Style Selector="TextBlock.section-title">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource SemiColorText2}" />
+        <Setter Property="Margin" Value="0,22,0,10" />
+    </Style>
+
+    <Style Selector="TextBlock.muted">
+        <Setter Property="Foreground" Value="{DynamicResource SemiColorText1}" />
+    </Style>
+
+    <Style Selector="TextBlock.faint">
+        <Setter Property="Foreground" Value="{DynamicResource SemiColorText2}" />
+    </Style>
+
+    <!--
+        顶栏搜索框：始终位于固定的深色品牌条上，不能跟随明暗主题，
+        因此这里必须覆盖 Semi 的默认外观。
+    -->
+    <Style Selector="TextBox.search">
+        <Setter Property="Foreground" Value="{DynamicResource BrandTitle}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource BrandTitle}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBodyLarge}" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Background" Value="{DynamicResource SearchField}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SearchFieldBorder}" />
+    </Style>
+    <Style Selector="TextBox.search /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{DynamicResource SearchField}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SearchFieldBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="TextBox.search:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{DynamicResource SearchField}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrandSubtitle}" />
+    </Style>
+    <Style Selector="TextBox.search:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{DynamicResource SearchField}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SemiColorPrimary}" />
+    </Style>
+    <!--
+        部件名是 PART_Placeholder：Avalonia 12 把 Watermark 改成了 PlaceholderText，
+        模板部件跟着改名。选择器写成 PART_Watermark 不会报错，只是永远匹配不上——
+        占位文字于是用主题默认的近黑色 #1C1F23，压在深蓝顶栏上完全看不见。
+    -->
+    <Style Selector="TextBox.search /template/ TextBlock#PART_Placeholder">
+        <Setter Property="Foreground" Value="{DynamicResource SearchPlaceholder}" />
+    </Style>
+
+    <!-- 列表嵌在卡片里，不要再自带一层底色和边框 -->
+    <Style Selector="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBoxItem">
+        <Setter Property="Padding" Value="12,10" />
+        <Setter Property="Margin" Value="0,1" />
+    </Style>
+
+    <!--
+        复习卡片。字号只能从这里给：控件上写内联 FontSize 是本地值，
+        会压过样式 Setter，专注模式就放大不了。
+    -->
+    <Style Selector="views|StudySession TextBlock.card-headword">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeDisplay}" />
+    </Style>
+    <Style Selector="views|StudySession TextBlock.card-answer">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeTitle}" />
+    </Style>
+
+    <!--
+        专注模式：同一个 StudySession 控件铺满窗口。字号上一档，
+        词书范围/每日上限/统计图这些配置项收起来——专注时它们只是干扰。
+    -->
+    <Style Selector="views|StudySession.focus TextBlock.card-headword">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeFocusHeadword}" />
+    </Style>
+    <Style Selector="views|StudySession.focus TextBlock.card-answer">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeFocusAnswer}" />
+    </Style>
+    <Style Selector="views|StudySession.focus :is(Control).session-chrome">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!--
+        卡片和评分按钮一起封顶居中。只压卡片的话按钮会被留在窗口最下沿，
+        离卡片一屏远。
+    -->
+    <Style Selector="views|StudySession.focus Grid.card-stage">
+        <Setter Property="MaxHeight" Value="480" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- 评分按钮：上行是「刚才记得怎么样」，下行是「下次什么时候再考」 -->
+    <Style Selector="Button.grade">
+        <Setter Property="Height" Value="52" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.grade TextBlock.grade-name">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeCompact}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <!--
+        下一行用 Opacity 压暗而不是换颜色：主按钮是蓝底白字，
+        写死一个灰色在上面会看不清。
+    -->
+    <Style Selector="Button.grade TextBlock.grade-next">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
+        <Setter Property="Opacity" Value="0.72" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,1,0,0" />
+    </Style>
+
+    <!--
+        行内删除：默认透明而不是折叠，鼠标移进移出时行高不会跳。
+        透明按钮仍可点击，但指针不在行上时也够不着它，没有误触风险。
+    -->
+    <Style Selector="Button.row-delete">
+        <Setter Property="Opacity" Value="0" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover Button.row-delete">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.row-delete:pointerover">
+        <Setter Property="Foreground" Value="{DynamicResource SemiColorDanger}" />
+    </Style>
+
+    <!--
+        音标行：一个音一格，认得的可点可悬停。
+        整行横排、不换行——音标本来就短，折行反而读不成一个整体。
+    -->
+    <Style Selector="ItemsControl.phonetic">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+        </Setter>
+        <Setter Property="ItemTemplate">
+            <DataTemplate DataType="vm:PhonemeChip">
+                <!--
+                    可教的做成按钮，不可教的（重音点、不认识的字符）就是一段静态文字。
+                    都摆成按钮的话，点重音点没反应，反而像坏了。
+                -->
+                <!--
+                    命令绑到 ItemsControl 而不是 Window：详情页挂的是 MainViewModel，
+                    复习卡片挂的是 StudyViewModel，两边各有自己的 SpeakPhonemeCommand。
+                    走 Window 的话在卡片上会拿到详情页那个。
+                -->
+                <Panel>
+                    <TextBlock Text="{Binding Text}" Classes="muted"
+                               FontSize="{DynamicResource FontSizeBody}"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding !CanTeach}" />
+                    <Button Classes="phoneme"
+                            Theme="{DynamicResource BorderlessButton}"
+                            Content="{Binding Text}"
+                            ToolTip.Tip="{Binding Hint}"
+                            IsVisible="{Binding CanTeach}"
+                            Command="{ReflectionBinding $parent[ItemsControl].DataContext.SpeakPhonemeCommand}"
+                            CommandParameter="{Binding}" />
+                </Panel>
+            </DataTemplate>
+        </Setter>
+    </Style>
+    <!--
+        内边距必须是 0：一条音标要能当成一个整体读。留哪怕 1px，
+        'kænsl 也会散成 ' k æ n s l，看着像六个字母而不是一个词的读音。
+        代价是每格的点击区域只有字形本身那么宽——鼠标够用，
+        而且悬停提示不需要精确命中。
+    -->
+    <Style Selector="Button.phoneme">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="Foreground" Value="{DynamicResource SemiColorText1}" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <!-- 悬停时点亮，让人知道这一个个音是能点的 -->
+    <Style Selector="Button.phoneme:pointerover">
+        <Setter Property="Foreground" Value="{DynamicResource SemiColorPrimary}" />
+    </Style>
+
+    <!-- 音标表：一个音一张卡，点了朗读例词 -->
+    <Style Selector="ItemsControl.phoneme-grid">
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <WrapPanel ItemSpacing="8" LineSpacing="8" />
+            </ItemsPanelTemplate>
+        </Setter>
+        <Setter Property="ItemTemplate">
+            <DataTemplate DataType="vm:PhonemeCard">
+                <Button Theme="{DynamicResource BorderlessButton}"
+                        Background="{DynamicResource SemiColorFill0}"
+                        Padding="12,8" MinWidth="104"
+                        HorizontalContentAlignment="Left"
+                        ToolTip.Tip="{Binding Tip}"
+                        Command="{ReflectionBinding $parent[Window].DataContext.SpeakCommand}"
+                        CommandParameter="{Binding Example}">
+                    <StackPanel Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{Binding Symbol}" FontWeight="SemiBold"
+                                       FontSize="{DynamicResource FontSizeSubtitle}" />
+                            <!-- 有中文使用者容易读错的提示时点一颗小点，鼠标停上去看 -->
+                            <Ellipse Width="5" Height="5" VerticalAlignment="Top" Margin="0,4,0,0"
+                                     Fill="{DynamicResource SemiColorPrimary}"
+                                     IsVisible="{Binding HasTip}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Example}" Classes="muted"
+                                   FontSize="{DynamicResource FontSizeCompact}" />
+                    </StackPanel>
+                </Button>
+            </DataTemplate>
+        </Setter>
+    </Style>
+
+    <!-- 听音辨词的两个选项，做得大一点，听完就能一下点中 -->
+    <Style Selector="Button.choice">
+        <Setter Property="Padding" Value="30,14" />
+        <Setter Property="MinWidth" Value="150" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeTitle}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- 图标来自 Material.Icons.Avalonia，这里只统一尺寸与配色 -->
+    <Style Selector="icons|MaterialIcon">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="Foreground" Value="{DynamicResource SemiColorText2}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TabItem:selected icons|MaterialIcon">
+        <Setter Property="Foreground" Value="{DynamicResource SemiColorPrimary}" />
+    </Style>
+    <!--
+        六个标签要挤进 360px 的左栏。Semi 默认的内边距下最后一个「写作」会
+        单独折到第二行——5+1 的断行看着像排版事故。收窄内边距和图标，
+        默认字号下六个排得下；放大字号时仍会折行，但那时是 4+2，看着是整齐的。
+    -->
+    <Style Selector="TabItem">
+        <Setter Property="Padding" Value="3,8" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+    </Style>
+    <Style Selector="TabItem icons|MaterialIcon">
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
+    </Style>
+    <Style Selector="icons|MaterialIcon.large">
+        <Setter Property="Width" Value="44" />
+        <Setter Property="Height" Value="44" />
+        <Setter Property="Foreground" Value="{DynamicResource SemiColorBorder}" />
+    </Style>
+
+    <!-- 空状态：图标 + 一句说明，不要留一片白 -->
+    <Style Selector="StackPanel.empty-state">
+        <Setter Property="Spacing" Value="12" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="StackPanel.empty-state > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource SemiColorText2}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeCompact}" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="MaxWidth" Value="260" />
+    </Style>
+
+    <!-- 收藏 / 加入学习 打开时的状态色 -->
+    <Style Selector="Button.toggle-on">
+        <Setter Property="Foreground" Value="{DynamicResource SemiColorPrimary}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SemiColorPrimary}" />
+    </Style>
+
+</Styles>

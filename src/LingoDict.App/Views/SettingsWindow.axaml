@@ -1,0 +1,105 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LingoDict.App.ViewModels"
+        xmlns:icons="using:Material.Icons.Avalonia"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="LingoDict.App.Views.SettingsWindow"
+        x:DataType="vm:MainViewModel"
+        Title="设置"
+        Icon="/Assets/lingodict.ico"
+        Width="460" Height="560"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <Border Classes="card" Margin="16" Padding="24,20">
+        <ScrollViewer>
+            <StackPanel Spacing="4">
+
+                <TextBlock Classes="section-title" Text="主题" Margin="0,0,0,10" />
+                <ComboBox ItemsSource="{Binding ThemeModeOptions}"
+                          SelectedItem="{Binding SelectedThemeMode}"
+                          HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ThemeModeOption">
+                            <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <TextBlock Classes="section-title" Text="主题色" />
+                <!--
+                    做成一排色点而不是下拉框：颜色本来就该直接看，
+                    在下拉框里读「玫红」两个字反而要人脑补。
+                -->
+                <ItemsControl ItemsSource="{Binding AccentOptions}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel ItemSpacing="10" LineSpacing="10" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AccentChoice">
+                            <Button Theme="{DynamicResource BorderlessButton}"
+                                    Padding="3" MinWidth="0" MinHeight="0"
+                                    ToolTip.Tip="{Binding Label}"
+                                    Command="{ReflectionBinding $parent[Window].DataContext.PickAccentCommand}"
+                                    CommandParameter="{Binding Id}">
+                                <Panel>
+                                    <Ellipse Width="26" Height="26">
+                                        <Ellipse.Fill>
+                                            <SolidColorBrush Color="{Binding Swatch}" />
+                                        </Ellipse.Fill>
+                                    </Ellipse>
+                                    <!-- 选中的那个打勾。只靠描边在深色下几乎看不出来。 -->
+                                    <icons:MaterialIcon Kind="Check" Width="16" Height="16"
+                                                        Foreground="White"
+                                                        IsVisible="{Binding IsSelected}" />
+                                </Panel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Classes="faint" FontSize="{DynamicResource FontSizeCaption}"
+                           TextWrapping="Wrap" Margin="0,8,0,0"
+                           Text="主题色同时决定顶栏那条深色带的色调。改动立即生效并保存。" />
+
+                <TextBlock Classes="section-title" Text="字号" />
+                <ComboBox ItemsSource="{Binding FontScaleOptions}"
+                          SelectedItem="{Binding SelectedFontScale}"
+                          HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FontScaleOption">
+                            <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <TextBlock Classes="section-title" Text="字体" />
+                <ComboBox ItemsSource="{Binding FontFamilyOptions}"
+                          SelectedItem="{Binding SelectedFontFamily}"
+                          HorizontalAlignment="Stretch" />
+                <TextBlock Classes="faint" FontSize="{DynamicResource FontSizeCaption}"
+                           TextWrapping="Wrap" Margin="0,8,0,0"
+                           Text="系统没有的字体会自动回退到默认字体栈。改动立即生效并保存。" />
+
+                <TextBlock Classes="section-title" Text="发音" />
+                <ComboBox ItemsSource="{Binding SpeechVoiceOptions}"
+                          SelectedItem="{Binding SelectedSpeechVoice}"
+                          HorizontalAlignment="Stretch"
+                          IsEnabled="{Binding IsSpeechAvailable}" />
+                <TextBlock Classes="faint" FontSize="{DynamicResource FontSizeCaption}"
+                           TextWrapping="Wrap" Margin="0,8,0,0"
+                           Text="{Binding SpeechHint}" />
+
+                <TextBlock Classes="section-title" Text="用户数据" />
+                <TextBlock Classes="muted" FontSize="{DynamicResource FontSizeSmall}"
+                           TextWrapping="Wrap" Text="{Binding UserDataLocation}" />
+                <TextBlock Classes="faint" FontSize="{DynamicResource FontSizeCaption}"
+                           TextWrapping="Wrap" Margin="0,6,0,0"
+                           Text="收藏、历史、笔记和学习卡片都存在这个文件里，直接复制即可备份。" />
+            </StackPanel>
+        </ScrollViewer>
+    </Border>
+</Window>

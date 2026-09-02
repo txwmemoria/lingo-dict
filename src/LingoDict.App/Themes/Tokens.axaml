@@ -1,0 +1,52 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        界面表面直接用 Semi 的调色板键（SemiColorText0/1/2、SemiColorBackground0/1、
+        SemiColorFill0、SemiColorBorder、SemiColorPrimary…，注意这些键存的是 Brush 而非 Color），
+        这样应用表面和 Semi 控件同源，深浅切换由 Semi 统一驱动。
+
+        这里只留 Semi 没有对应概念的东西：顶栏是固定的深色品牌条，不跟随明暗主题。
+    -->
+    <!--
+        字号阶梯。这里的值是缩放 1.0 时的基准，运行时由 Typography 按档位整体乘算并
+        覆写回 Application.Resources，所以界面里一律用 DynamicResource 引用、不写字面量。
+        字体族同理，改由 AppFontFamily 统一提供。
+    -->
+    <x:Double x:Key="FontSizeCaption">11</x:Double>
+    <x:Double x:Key="FontSizeSmall">12</x:Double>
+    <x:Double x:Key="FontSizeCompact">13</x:Double>
+    <x:Double x:Key="FontSizeBody">14</x:Double>
+    <x:Double x:Key="FontSizeBodyLarge">15</x:Double>
+    <x:Double x:Key="FontSizeSubtitle">16</x:Double>
+    <x:Double x:Key="FontSizeTitle">17</x:Double>
+    <x:Double x:Key="FontSizeBrand">21</x:Double>
+    <x:Double x:Key="FontSizeDisplay">34</x:Double>
+    <x:Double x:Key="FontSizeHeadword">36</x:Double>
+    <x:Double x:Key="FontSizeFocusAnswer">26</x:Double>
+    <x:Double x:Key="FontSizeFocusHeadword">64</x:Double>
+
+    <FontFamily x:Key="AppFontFamily">Inter, Microsoft YaHei UI, PingFang SC</FontFamily>
+
+    <ResourceDictionary.ThemeDictionaries>
+
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="BrandInk" Color="#16203A" />
+            <SolidColorBrush x:Key="BrandTitle" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="BrandSubtitle" Color="#A2B2CE" />
+            <SolidColorBrush x:Key="SearchField" Color="#25314C" />
+            <SolidColorBrush x:Key="SearchFieldBorder" Color="#3A496A" />
+            <SolidColorBrush x:Key="SearchPlaceholder" Color="#8496B5" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="BrandInk" Color="#0D131E" />
+            <SolidColorBrush x:Key="BrandTitle" Color="#F2F5FA" />
+            <SolidColorBrush x:Key="BrandSubtitle" Color="#8494B0" />
+            <SolidColorBrush x:Key="SearchField" Color="#1B2434" />
+            <SolidColorBrush x:Key="SearchFieldBorder" Color="#2C3850" />
+            <SolidColorBrush x:Key="SearchPlaceholder" Color="#77869E" />
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

@@ -1,0 +1,44 @@
+{
+  "_note": "选型评测集。A 组可自动判分（答案在词典里有据可查），B 组需人工判断。",
+
+  "collocation": [
+    { "cn": "浓茶",     "answers": ["strong tea"],                                  "trap": "浓→thick/dense" },
+    { "cn": "红茶",     "answers": ["black tea"],                                   "trap": "红→red" },
+    { "cn": "大雨",     "answers": ["heavy rain", "pouring rain", "torrential rain"], "trap": "大→big" },
+    { "cn": "小雨",     "answers": ["light rain"],                                  "trap": "小→small" },
+    { "cn": "吃药",     "answers": ["take medicine", "take the medicine"],          "trap": "吃→eat" },
+    { "cn": "犯错误",   "answers": ["make a mistake", "make mistakes"],             "trap": "犯→commit" },
+    { "cn": "做作业",   "answers": ["do homework", "do my homework", "do the homework"], "trap": "做→make" },
+    { "cn": "开会",     "answers": ["have a meeting", "hold a meeting"],            "trap": "开→open" },
+    { "cn": "引起注意", "answers": ["draw attention", "attract attention", "catch attention"], "trap": "引起→cause" },
+    { "cn": "留下印象", "answers": ["give the impression", "make an impression", "leave an impression"], "trap": "留下→leave（部分可用）" },
+    { "cn": "花时间",   "answers": ["spend time", "take time"],                     "trap": "花→cost" },
+    { "cn": "时差",     "answers": ["jet lag", "time difference"],                  "trap": "逐词无从下手" },
+    { "cn": "明火",     "answers": ["open flame", "naked flame"],                   "trap": "明→bright" },
+    { "cn": "谋杀",     "answers": ["commit murder", "commit a murder"],            "trap": "动词搭配" },
+    { "cn": "下半场",   "answers": ["second half"],                                 "trap": "下→lower/next" },
+    { "cn": "目击者",   "answers": ["eye witness", "eyewitness"],                   "trap": "目击→see" },
+    { "cn": "方便面",   "answers": ["instant noodle", "instant noodles"],           "trap": "方便→convenient" },
+    { "cn": "交通事故", "answers": ["traffic accident", "road accident"],           "trap": "组合式，作对照" },
+    { "cn": "自由市场", "answers": ["free market"],                                 "trap": "组合式，作对照" },
+    { "cn": "重感冒",   "answers": ["bad cold", "heavy cold", "severe cold"],       "trap": "重→heavy（英式可用，美式少见）" },
+    { "cn": "飞机票价", "answers": ["air fare", "airfare"],                         "trap": "逐词会写成 plane ticket price" },
+    { "cn": "浓咖啡",   "answers": ["strong coffee"],                               "trap": "同浓茶，检验是否举一反三" },
+    { "cn": "堵车",     "answers": ["traffic jam", "heavy traffic", "be stuck in traffic"], "trap": "堵→block" },
+    { "cn": "开灯",     "answers": ["turn on the light", "switch on the light", "turn on the lights"], "trap": "开→open" },
+    { "cn": "拍照",     "answers": ["take a photo", "take photos", "take a picture", "take pictures"], "trap": "拍→hit/beat" }
+  ],
+
+  "discrimination": [
+    { "q": "affect 和 effect 有什么区别？各举一个例句。" },
+    { "q": "spend、cost、take 都能翻译成「花」，分别在什么情况下用？" },
+    { "q": "「我花了三个小时写这份报告」用 spend、cost 还是 take？为什么？" },
+    { "q": "see、look、watch、read 都是「看」，怎么区分？" },
+    { "q": "「到达北京」是 arrive in Beijing 还是 arrive at Beijing？为什么？" },
+    { "q": "advice 可数吗？「他给了我一些建议」怎么说？" },
+    { "q": "economic 和 economical 的区别是什么？" },
+    { "q": "「虽然下雨了，但是我还是去了」这句英文怎么写？中国学生常犯什么错？" },
+    { "q": "borrow 和 lend 怎么区分？「我能借你的笔吗」怎么说？" },
+    { "q": "为什么是 in the morning 但 at night？" }
+  ]
+}

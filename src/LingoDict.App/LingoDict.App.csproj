@@ -1,0 +1,76 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <!-- 用户双击的是这个文件，别让它叫 LingoDict.App.exe -->
+    <AssemblyName>LingoDict</AssemblyName>
+    <Version>1.0.0</Version>
+    <RootNamespace>LingoDict.App</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\lingodict.ico</ApplicationIcon>
+
+    <!-- 界面全是中文，一堆 xx/*.resources.dll 只是往包里塞垃圾 -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+
+    <!--
+        不开 PublishTrimmed：界面大量使用 {ReflectionBinding $parent[Window].DataContext.X}，
+        属性名在运行时才解析，裁剪器看不到引用会把成员删掉——症状是运行时空白控件，
+        不是编译错误。体积大头是 95 MiB 的词典库，裁那几兆运行时不划算。
+    -->
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="LingoDict.App.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\" />
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <!--
+      写作检查的模型默认打进包里，开箱即用。安装包因此从 102 MiB 涨到 193 MiB。
+      模型是第三方产物（gotutiyan/gector，仅限非商业用途），随包分发意味着
+      这个安装包也只能非商业地分发——见 README「模型的许可」。
+      不想带就 -p:IncludeGrammarModel=false，用户可以在应用内自己装。
+  -->
+  <PropertyGroup Condition="'$(IncludeGrammarModel)' == ''">
+    <IncludeGrammarModel>true</IncludeGrammarModel>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IncludeGrammarModel)' == 'true' And Exists('..\..\artifacts\grammar\gector-int8.onnx')">
+    <Content Include="..\..\artifacts\grammar\gector-int8.onnx" Link="grammar\gector-int8.onnx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('..\..\artifacts\dictionary.db')">
+    <Content Include="..\..\artifacts\dictionary.db" Link="dictionary.db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Material.Icons.Avalonia" Version="3.0.2" />
+    <PackageReference Include="Semi.Avalonia" Version="12.1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LingoDict.Core\LingoDict.Core.csproj" />
+    <ProjectReference Include="..\LingoDict.Grammar\LingoDict.Grammar.csproj" />
+    <ProjectReference Include="..\LingoDict.Infrastructure\LingoDict.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

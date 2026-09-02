@@ -1,0 +1,156 @@
+name: Release
+
+# 打 v* 标签就出三个包：Windows 安装程序、macOS arm64/x64 的 dmg。
+# 手动触发（workflow_dispatch）只构建、不建 Release，用来试跑。
+#
+# 两个刻意的取舍：
+#
+# 1. 词典库（103 MiB）不在仓库里，从一个专门的数据 Release 取。
+#    源数据是 81 个第三方词书 zip，公开仓库里不再分发一次；每次 CI
+#    去抓上游也不合适。所以本地生成一次、传到 DATA_TAG，之后只是下载。
+#
+# 2. 写作检查模型（123 MiB）**不打进包**。它是 gotutiyan/gector 的产物，
+#    仅限非商业用途，挂到公开 Release 上是一次公开再分发。应用内已经有
+#    下载 / 从本地导入的入口（GrammarModelInstaller，断点续传 + 校验），
+#    用户首次打开写作页时自己装。安装包因此从 193 MiB 回到约 102 MiB。
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # 词典库所在的 Release 标签。版本号跟着 SqliteDictionaryRepository 的
+  # SupportedSchemaVersion 走——下面每个构建任务都会核对，改了 schema 却忘了
+  # 重新上传词典库时，CI 会直接停在那一步，而不是发出一个打不开词典的包。
+  DATA_TAG: data-v6
+
+jobs:
+  windows:
+    name: Windows 安装程序
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: 核对版本与 schema
+        shell: pwsh
+        run: ./scripts/ci-preflight.ps1 -DataTag "$env:DATA_TAG" -Ref "${{ github.ref }}"
+
+      - name: 取词典库
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          gh release download $env:DATA_TAG --pattern dictionary.db --dir artifacts
+          if ($LASTEXITCODE -ne 0) { throw "取不到 $env:DATA_TAG 里的 dictionary.db" }
+          $mb = (Get-Item artifacts/dictionary.db).Length / 1MB
+          if ($mb -lt 50) { throw ("词典库只有 {0:N0} MiB，不像是完整的" -f $mb) }
+          Write-Host ("词典库 {0:N0} MiB" -f $mb)
+
+      - name: 测试
+        run: dotnet test -c Release --nologo
+
+      - name: 发布
+        shell: pwsh
+        run: ./scripts/publish.ps1 -Runtime win-x64 -NoGrammar
+
+      - name: 装 Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: 打安装包
+        shell: pwsh
+        run: ./scripts/pack-installer.ps1
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-installer
+          path: artifacts/*.exe
+          if-no-files-found: error
+
+  macos:
+    name: macOS ${{ matrix.rid }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [osx-arm64, osx-x64]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: 核对版本与 schema
+        shell: pwsh
+        run: ./scripts/ci-preflight.ps1 -DataTag "$env:DATA_TAG" -Ref "${{ github.ref }}"
+
+      - name: 取词典库
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          gh release download $env:DATA_TAG --pattern dictionary.db --dir artifacts
+          if ($LASTEXITCODE -ne 0) { throw "取不到 $env:DATA_TAG 里的 dictionary.db" }
+
+      # arm64 那一档顺带跑一遍测试；x64 是交叉发布，同一份代码不必再测一次
+      - name: 测试
+        if: matrix.rid == 'osx-arm64'
+        run: dotnet test -c Release --nologo
+
+      - name: 发布
+        shell: pwsh
+        run: ./scripts/publish.ps1 -Runtime ${{ matrix.rid }} -NoGrammar
+
+      - name: 打 .app 和 .dmg
+        shell: pwsh
+        run: ./scripts/pack-macos.ps1 -PublishDir artifacts/publish/${{ matrix.rid }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos-${{ matrix.rid }}
+          path: artifacts/*.dmg
+          if-no-files-found: error
+
+  release:
+    name: 建 Release
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: 建 Release 并上传
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ls -lh dist
+          gh release create "$TAG" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "LingoDict $TAG" \
+            --notes-file - <<'NOTES'
+          ## 安装
+
+          - **Windows**：下载 `LingoDict-*-win-x64-Setup.exe`，双击。装到 `%LOCALAPPDATA%\LingoDict`，不需要管理员权限。
+          - **macOS**：下载对应芯片的 `.dmg`（Apple Silicon 选 `osx-arm64`，Intel 选 `osx-x64`），拖进 Applications。
+
+          > macOS 的包**没有签名和公证**。首次打开要右键 →「打开」，
+          > 或者执行 `xattr -dr com.apple.quarantine /Applications/LingoDict.app`。
+
+          ## 写作检查需要单独装模型
+
+          安装包里**不含**语法模型（123 MiB）。它是 [gotutiyan/gector](https://github.com/gotutiyan/gector)
+          的产物，**仅限非商业用途**，所以不随发行版分发。首次打开「写作」页时，
+          应用内可以下载或从本地导入——词典、学习、发音这些不受影响，开箱即用。
+          NOTES

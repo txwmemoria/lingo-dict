@@ -1,0 +1,700 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LingoDict.App.ViewModels"
+        xmlns:models="using:LingoDict.Core.Models"
+        xmlns:ctl="using:LingoDict.App.Controls"
+        xmlns:views="using:LingoDict.App.Views"
+        xmlns:conv="using:LingoDict.App.Converters"
+        xmlns:icons="using:Material.Icons.Avalonia"
+        xmlns:sys="using:System"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        d:DesignWidth="1280" d:DesignHeight="820"
+        x:Class="LingoDict.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/lingodict.ico"
+        Title="LingoDict"
+        Width="1280" Height="820" MinWidth="960" MinHeight="620">
+
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+D" Command="{Binding ToggleFavoriteCommand}" />
+        <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveNoteCommand}" />
+        <KeyBinding Gesture="Ctrl+E" Command="{Binding ToggleStudyCommand}" />
+        <KeyBinding Gesture="Alt+Left" Command="{Binding GoBackCommand}" />
+        <KeyBinding Gesture="Alt+Right" Command="{Binding GoForwardCommand}" />
+        <!-- 横向走历史，纵向走列表位置——两件事，两条轴 -->
+        <KeyBinding Gesture="Alt+Up" Command="{Binding GoPreviousInListCommand}" />
+        <KeyBinding Gesture="Alt+Down" Command="{Binding GoNextInListCommand}" />
+    </Window.KeyBindings>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Border Grid.Row="0" Background="{DynamicResource BrandInk}" Padding="24,16">
+            <Grid ColumnDefinitions="Auto,20,Auto,*,Auto,Auto">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="LINGO" FontSize="{DynamicResource FontSizeBrand}" FontWeight="Bold"
+                               Foreground="{DynamicResource BrandTitle}" />
+                    <TextBlock Text="离线英语词典" FontSize="{DynamicResource FontSizeCaption}" Margin="0,1,0,0"
+                               Foreground="{DynamicResource BrandSubtitle}" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" Margin="0,0,10,0"
+                            VerticalAlignment="Center">
+                    <Button Theme="{DynamicResource BorderlessButton}" ToolTip.Tip="后退（Alt+← 或鼠标侧键）"
+                            Command="{Binding GoBackCommand}">
+                        <icons:MaterialIcon Kind="ArrowLeft" Width="19" Height="19"
+                                            Foreground="{DynamicResource BrandSubtitle}" />
+                    </Button>
+                    <Button Theme="{DynamicResource BorderlessButton}" ToolTip.Tip="前进（Alt+→ 或鼠标侧键）"
+                            Command="{Binding GoForwardCommand}">
+                        <icons:MaterialIcon Kind="ArrowRight" Width="19" Height="19"
+                                            Foreground="{DynamicResource BrandSubtitle}" />
+                    </Button>
+                </StackPanel>
+
+                <TextBox Grid.Column="3" x:Name="SearchBox" Classes="search"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         PlaceholderText="输入英文单词或中文释义…（↑↓ 选择，Ctrl+F 聚焦，Esc 清空）"
+                         MaxWidth="760" HorizontalAlignment="Stretch">
+                    <TextBox.InnerLeftContent>
+                        <icons:MaterialIcon Kind="Magnify" Margin="12,0,2,0"
+                                            Foreground="{DynamicResource SearchPlaceholder}" />
+                    </TextBox.InnerLeftContent>
+                </TextBox>
+                <Button Grid.Column="4" Margin="16,0,0,0" ToolTip.Tip="音标表 · 听音辨词"
+                        Theme="{DynamicResource BorderlessButton}"
+                        Command="{Binding OpenPhoneticsCommand}">
+                    <icons:MaterialIcon Kind="AlphabeticalVariant" Width="20" Height="20"
+                                        Foreground="{DynamicResource BrandSubtitle}" />
+                </Button>
+                <Button Grid.Column="5" Margin="4,0,0,0" ToolTip.Tip="设置"
+                        Theme="{DynamicResource BorderlessButton}"
+                        Command="{Binding OpenSettingsCommand}">
+                    <icons:MaterialIcon Kind="CogOutline" Width="20" Height="20"
+                                        Foreground="{DynamicResource BrandSubtitle}" />
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- 左栏用绝对宽度而非比例：列表内容不会因窗口变宽而变得更有用，
+             把多出来的横向空间全部留给正文。宽度可拖，并记在用户库里。 -->
+        <Grid Grid.Row="1" x:Name="ContentGrid" Margin="18,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360" MinWidth="300" MaxWidth="560" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <GridSplitter Grid.Column="1" x:Name="PaneSplitter" Width="16"
+                          Background="Transparent" ResizeDirection="Columns"
+                          HorizontalAlignment="Center" />
+
+            <Border Classes="card" Padding="18,14,18,18">
+                <TabControl x:Name="MainTabs">
+
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <icons:MaterialIcon Kind="Magnify" />
+                                <TextBlock Text="查词" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                        <Grid RowDefinitions="Auto,*" Margin="0,10,0,0">
+
+                        <!--
+                            短语命中放在词条上面：搜「大雨」时最该看到的是 heavy rain，
+                            而不是 downpour 底下第三条。中文母语者的典型错误就是
+                            查了 heavy=重的、rain=雨，然后拼出 big rain。
+                        -->
+                        <ItemsControl ItemsSource="{Binding PhraseResults}"
+                                      IsVisible="{Binding PhraseResults.Count}"
+                                      Margin="0,0,0,10">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:PhraseHit">
+                                    <Button Theme="{DynamicResource BorderlessButton}"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                            Padding="12,8" Margin="0,0,0,4"
+                                            Background="{DynamicResource SemiColorFill0}"
+                                            Command="{ReflectionBinding $parent[Window].DataContext.OpenPhraseCommand}"
+                                            CommandParameter="{Binding}">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <icons:MaterialIcon Kind="FormatQuoteClose" Width="13" Height="13" />
+                                                <TextBlock Text="{Binding Text}" FontWeight="SemiBold"
+                                                           FontSize="{DynamicResource FontSizeBody}"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Translation}" Classes="muted"
+                                                       FontSize="{DynamicResource FontSizeCompact}"
+                                                       Margin="21,3,0,0" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <ListBox Grid.Row="1" x:Name="SearchList" ItemsSource="{Binding SearchResults}"
+                                 SelectedItem="{Binding SelectedSearchResult}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="models:WordSummary">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock FontSize="{DynamicResource FontSizeSubtitle}" FontWeight="SemiBold"
+                                                       ctl:Highlight.Text="{Binding Headword}"
+                                                       ctl:Highlight.Query="{ReflectionBinding $parent[ListBox].DataContext.SearchText}" />
+                                            <TextBlock Text="{Binding Phonetic}" Classes="faint"
+                                                       FontSize="{DynamicResource FontSizeSmall}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Background="{DynamicResource SemiColorFill0}"
+                                                CornerRadius="6" Padding="6,1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding BookCount}" Classes="faint" FontSize="{DynamicResource FontSizeCaption}" />
+                                        </Border>
+                                        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Classes="muted"
+                                                   FontSize="{DynamicResource FontSizeCompact}" Margin="0,4,0,0"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ctl:Highlight.Text="{Binding Translation}"
+                                                   ctl:Highlight.Query="{ReflectionBinding $parent[ListBox].DataContext.SearchText}" />
+
+                                        <!--
+                                            典型搭配。中文一个词常对应英文好几个（看 → see/look/watch/read），
+                                            并排看各自跟什么搭，不用解释区别自己就出来了：
+                                            spend money / cost accounting、read the newspaper / watch tv。
+                                        -->
+                                        <ItemsControl Grid.Row="2" Grid.ColumnSpan="2" Margin="0,6,0,0"
+                                                      ItemsSource="{Binding Collocations}"
+                                                      IsVisible="{Binding Collocations.Count}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="sys:String">
+                                                    <Border Background="{DynamicResource SemiColorFill0}"
+                                                            CornerRadius="5" Padding="6,2" Margin="0,0,5,0">
+                                                        <TextBlock Text="{Binding}" Classes="faint"
+                                                                   FontSize="{DynamicResource FontSizeCaption}" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <icons:MaterialIcon Kind="BookOpenPageVariantOutline" />
+                                <TextBlock Text="词书" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="0,10,0,0">
+                            <!-- 词书用下拉选而不是再切一列：左栏本来就窄，
+                                 嵌套两层列瓜分之后词表只剩百来像素。 -->
+                            <ComboBox ItemsSource="{Binding Books}" SelectedItem="{Binding SelectedBook}"
+                                      HorizontalAlignment="Stretch" PlaceholderText="选择词书">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="models:BookSummary">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="1" Text="{Binding WordCount}" Classes="faint"
+                                                       FontSize="{DynamicResource FontSizeCaption}"
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <TextBox Grid.Row="1" Classes="field" Text="{Binding BookFilter}" Margin="0,8,0,8"
+                                     PlaceholderText="在本词书内过滤（词头或释义）"
+                                     IsVisible="{Binding SelectedBook, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                            <StackPanel Grid.Row="2" Classes="empty-state"
+                                        IsVisible="{Binding SelectedBook, Converter={x:Static ObjectConverters.IsNull}}">
+                                <icons:MaterialIcon Classes="large" Kind="BookOpenPageVariantOutline"
+                                                    HorizontalAlignment="Center" />
+                                <TextBlock Text="从上方选择一本词书。" />
+                            </StackPanel>
+
+                            <ListBox Grid.Row="2" ItemsSource="{Binding BookWords}" SelectedItem="{Binding SelectedBookWord}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="models:WordSummary">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Headword}" FontWeight="SemiBold" FontSize="{DynamicResource FontSizeBody}" />
+                                                <TextBlock Text="{Binding Phonetic}" Classes="faint"
+                                                           FontSize="{DynamicResource FontSizeCaption}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Translation}" Classes="muted"
+                                                       FontSize="{DynamicResource FontSizeSmall}" Margin="0,3,0,0"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!--
+                                书签：翻到哪儿自动记到哪儿，下次打开这本书直接回到那个词。
+                                只在「书签不是当前这个词」时才露出来——正看着它的时候提示它没意义。
+                            -->
+                            <Button Grid.Row="3" Theme="{DynamicResource BorderlessButton}"
+                                    HorizontalAlignment="Left" Margin="0,12,0,0" Padding="0" MinWidth="0"
+                                    Command="{Binding GoToBookmarkCommand}"
+                                    ToolTip.Tip="回到上次看到的位置"
+                                    IsVisible="{Binding BookmarkHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <icons:MaterialIcon Kind="BookmarkOutline" Width="14" Height="14" />
+                                    <TextBlock Text="{Binding BookmarkHint}" VerticalAlignment="Center"
+                                               FontSize="{DynamicResource FontSizeCaption}" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button Grid.Row="3" Content="整本加入学习"
+                                    Command="{Binding AddBookToStudyCommand}"
+                                    HorizontalAlignment="Right" Margin="0,12,0,0"
+                                    IsVisible="{Binding SelectedBook, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <icons:MaterialIcon Kind="StarOutline" />
+                                <TextBlock Text="收藏" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                        <Panel>
+                        <StackPanel Classes="empty-state"
+                                    IsVisible="{Binding !Favorites.Count}">
+                            <icons:MaterialIcon Classes="large" Kind="StarOutline" HorizontalAlignment="Center" />
+                            <TextBlock Text="还没有收藏。在词条详情页点「☆ 收藏」，或按 Ctrl+D。" />
+                        </StackPanel>
+                        <ListBox ItemsSource="{Binding Favorites}"
+                                 SelectedItem="{Binding SelectedFavorite}"
+                                 Margin="0,10,0,0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="models:FavoriteEntry">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Headword}" FontSize="{DynamicResource FontSizeBodyLarge}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Phonetic}" Classes="faint"
+                                                       FontSize="{DynamicResource FontSizeSmall}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Grid.RowSpan="2" Classes="row-delete"
+                                                Theme="{DynamicResource BorderlessButton}"
+                                                ToolTip.Tip="取消收藏"
+                                                Command="{ReflectionBinding $parent[Window].DataContext.RemoveFavoriteCommand}"
+                                                CommandParameter="{Binding}">
+                                            <icons:MaterialIcon Kind="Close" />
+                                        </Button>
+                                        <TextBlock Grid.Row="1" Text="{Binding Translation}" Classes="muted"
+                                                   FontSize="{DynamicResource FontSizeCompact}"
+                                                   Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        </Panel>
+                    </TabItem>
+
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <icons:MaterialIcon Kind="History" />
+                                <TextBlock Text="历史" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                        <Grid RowDefinitions="*,Auto" Margin="0,10,0,0">
+                            <ListBox ItemsSource="{Binding History}"
+                                     SelectedItem="{Binding SelectedHistory}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="models:HistoryEntry">
+                                        <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Headword}" FontSize="{DynamicResource FontSizeBodyLarge}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Phonetic}" Classes="faint"
+                                                           FontSize="{DynamicResource FontSizeSmall}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                            <Border Grid.Column="1" Background="{DynamicResource SemiColorFill0}"
+                                                    CornerRadius="6" Padding="6,1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding ViewCount}" Classes="faint" FontSize="{DynamicResource FontSizeCaption}" />
+                                            </Border>
+                                            <Button Grid.Column="2" Grid.RowSpan="2" Classes="row-delete"
+                                                    Theme="{DynamicResource BorderlessButton}"
+                                                    ToolTip.Tip="从历史中移除"
+                                                    Command="{ReflectionBinding $parent[Window].DataContext.RemoveHistoryCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <icons:MaterialIcon Kind="Close" />
+                                            </Button>
+                                            <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Translation}"
+                                                       Classes="muted" FontSize="{DynamicResource FontSizeCompact}" Margin="0,4,0,0"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button Grid.Row="1" Content="清空历史"
+                                    Command="{Binding ClearHistoryCommand}"
+                                    HorizontalAlignment="Right" Margin="0,12,0,0" />
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem x:Name="StudyTab">
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <icons:MaterialIcon Kind="SchoolOutline" />
+                                <TextBlock Text="学习" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                        <views:StudySession DataContext="{Binding Study}" />
+                    </TabItem>
+
+                    <TabItem x:Name="WritingTab">
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <icons:MaterialIcon Kind="Spellcheck" />
+                                <TextBlock Text="写作" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </TabItem.Header>
+                        <views:WritingCheck DataContext="{Binding Writing}" />
+                    </TabItem>
+
+                </TabControl>
+            </Border>
+
+            <Border Grid.Column="2" Classes="card" Padding="28,24">
+                <Panel>
+                    <StackPanel Classes="empty-state"
+                                IsVisible="{Binding SelectedWord, Converter={x:Static ObjectConverters.IsNull}}">
+                        <icons:MaterialIcon Classes="large" Kind="BookSearchOutline"
+                                            HorizontalAlignment="Center" />
+                        <TextBlock Text="在左侧选择一个单词，或在上方搜索框输入英文、中文释义。" />
+                    </StackPanel>
+                <ScrollViewer x:Name="DetailScroller">
+                    <!-- 右侧留出滚动条的宽度，否则会压住收藏/加入学习按钮 -->
+                    <StackPanel MaxWidth="{Binding DetailMaxWidth}" Margin="0,0,14,0"
+                                IsVisible="{Binding SelectedWord, Converter={x:Static ObjectConverters.IsNotNull}}">
+
+                        <!--
+                            逐个看词时最有用的其实是中间那句「37 / 1200」——
+                            光有快捷键给不了位置感。按钮顺带解决发现性。
+                        -->
+                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,14"
+                              IsVisible="{Binding CanBrowseList}">
+                            <Button Theme="{DynamicResource BorderlessButton}" Padding="6,2"
+                                    ToolTip.Tip="上一个（Alt+↑）"
+                                    Command="{Binding GoPreviousInListCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <icons:MaterialIcon Kind="ChevronUp" />
+                                    <TextBlock Text="上一个" VerticalAlignment="Center"
+                                               FontSize="{DynamicResource FontSizeCaption}" />
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Grid.Column="1" Text="{Binding BrowseLabel}" Classes="faint"
+                                       FontSize="{DynamicResource FontSizeCaption}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Button Grid.Column="2" Theme="{DynamicResource BorderlessButton}" Padding="6,2"
+                                    ToolTip.Tip="下一个（Alt+↓）"
+                                    Command="{Binding GoNextInListCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="下一个" VerticalAlignment="Center"
+                                               FontSize="{DynamicResource FontSizeCaption}" />
+                                    <icons:MaterialIcon Kind="ChevronDown" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                                <!-- 可选中：查完词最常见的下一步就是把它复制走 -->
+                                <SelectableTextBlock Text="{Binding SelectedWord.Headword}"
+                                                     FontSize="{DynamicResource FontSizeHeadword}" FontWeight="Bold" />
+                                <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,8,0,0">
+                                    <Button Theme="{DynamicResource BorderlessButton}"
+                                            Padding="0" MinWidth="0"
+                                            ToolTip.Tip="朗读（系统语音合成）"
+                                            IsVisible="{Binding IsSpeechAvailable}"
+                                            Command="{Binding SpeakCommand}">
+                                        <icons:MaterialIcon Kind="VolumeHigh" Width="19" Height="19"
+                                                            Foreground="{DynamicResource SemiColorPrimary}" />
+                                    </Button>
+                                    <!--
+                                        音标拆成一格格：不认识某个音时，鼠标停上去看它在哪个熟词里，
+                                        点一下听那个词。音标是符号系统，光听整词学不会，
+                                        得把符号绑到一个已经会读的词上。
+                                    -->
+                                    <TextBlock Text="英" Classes="faint" FontSize="{DynamicResource FontSizeSmall}" VerticalAlignment="Center" />
+                                    <ItemsControl ItemsSource="{Binding UkPhonemes}" Classes="phonetic" />
+                                    <TextBlock Text="美" Classes="faint" FontSize="{DynamicResource FontSizeSmall}" VerticalAlignment="Center" />
+                                    <ItemsControl ItemsSource="{Binding UsPhonemes}" Classes="phonetic" />
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                                <Button Content="{Binding StudyGlyph}" Command="{Binding ToggleStudyCommand}"
+                                        Classes.toggle-on="{Binding IsInStudy}" FontSize="{DynamicResource FontSizeSmall}" ToolTip.Tip="Ctrl+E" />
+                                <Button Content="{Binding FavoriteGlyph}" Command="{Binding ToggleFavoriteCommand}"
+                                        Classes.toggle-on="{Binding IsFavorite}" FontSize="{DynamicResource FontSizeSmall}" ToolTip.Tip="Ctrl+D" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!--
+                            宽屏分两列：左栏是顺着读的正文（释义、例句），
+                            右栏是查着用的参考（短语、同近义词、笔记）。
+                            窄屏时右栏宽度归零、内容落回左栏下方，顺序不变。
+                        -->
+                        <Grid RowDefinitions="Auto,Auto">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="{Binding DetailGapWidth}" />
+                                <ColumnDefinition Width="{Binding DetailAsideWidth}" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+                            <StackPanel IsVisible="{Binding SelectedWord.Translations, Converter={x:Static conv:AppConverters.IsNotEmpty}}">
+                                <TextBlock Classes="section-title" Text="释义" />
+                                <ItemsControl ItemsSource="{Binding SelectedWord.Translations}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="sys:String">
+                                            <Border BorderBrush="{DynamicResource SemiColorBorder}" BorderThickness="0,0,0,1" Padding="0,9">
+                                                <TextBlock FontSize="{DynamicResource FontSizeBodyLarge}" TextWrapping="Wrap" LineHeight="24"
+                                                           ctl:Highlight.Text="{Binding}"
+                                                           ctl:Highlight.Query="{ReflectionBinding $parent[Window].DataContext.SearchText}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel IsVisible="{Binding AlternateEntries, Converter={x:Static conv:AppConverters.IsNotEmpty}}">
+                                <TextBlock Classes="section-title" Text="其他词书的释义" />
+                                <ItemsControl ItemsSource="{Binding AlternateEntries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:AlternateEntry">
+                                            <Button Theme="{DynamicResource BorderlessButton}"
+                                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                                    Padding="12,9" Margin="0,0,0,6"
+                                                    Background="{DynamicResource SemiColorFill0}"
+                                                    Command="{ReflectionBinding $parent[Window].DataContext.ShowAlternateCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Translation}"
+                                                               FontSize="{DynamicResource FontSizeBody}"
+                                                               TextWrapping="Wrap" />
+                                                    <TextBlock Text="{Binding Books}" Classes="faint"
+                                                               FontSize="{DynamicResource FontSizeCaption}"
+                                                               Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel IsVisible="{Binding SelectedWord.Sentences, Converter={x:Static conv:AppConverters.IsNotEmpty}}">
+                                <TextBlock Classes="section-title" Text="例句" />
+                                <ItemsControl ItemsSource="{Binding SelectedWord.Sentences}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:ExampleSentence">
+                                            <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="10"
+                                                    Padding="14,11" Margin="0,0,0,8">
+                                                <StackPanel>
+                                                    <SelectableTextBlock FontSize="{DynamicResource FontSizeBody}"
+                                                               TextWrapping="Wrap" LineHeight="22"
+                                                               ctl:Lookup.Text="{Binding Text}"
+                                                               ctl:Lookup.Emphasis="{Binding Emphasis}"
+                                                               ctl:Lookup.Index="{ReflectionBinding $parent[Window].DataContext.WordIndex}"
+                                                               ctl:Lookup.Command="{ReflectionBinding $parent[Window].DataContext.NavigateToWordCommand}" />
+                                                    <TextBlock Text="{Binding Translation}" Classes="muted"
+                                                               FontSize="{DynamicResource FontSizeCompact}"
+                                                               Margin="0,5,0,0" TextWrapping="Wrap"
+                                                               IsVisible="{Binding Translation, Converter={x:Static conv:AppConverters.IsNotBlank}}" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel IsVisible="{Binding SelectedWord.ExamSentences, Converter={x:Static conv:AppConverters.IsNotEmpty}}">
+                                <TextBlock Classes="section-title" Text="真题例句" />
+                                <ItemsControl ItemsSource="{Binding SelectedWord.ExamSentences}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:ExampleSentence">
+                                            <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="10"
+                                                    Padding="14,11" Margin="0,0,0,8">
+                                                <StackPanel>
+                                                    <SelectableTextBlock FontSize="{DynamicResource FontSizeBody}"
+                                                               TextWrapping="Wrap" LineHeight="22"
+                                                               ctl:Lookup.Text="{Binding Text}"
+                                                               ctl:Lookup.Emphasis="{Binding Emphasis}"
+                                                               ctl:Lookup.Index="{ReflectionBinding $parent[Window].DataContext.WordIndex}"
+                                                               ctl:Lookup.Command="{ReflectionBinding $parent[Window].DataContext.NavigateToWordCommand}" />
+                                                    <TextBlock Text="{Binding Translation}" Classes="muted"
+                                                               FontSize="{DynamicResource FontSizeCompact}"
+                                                               Margin="0,5,0,0" TextWrapping="Wrap"
+                                                               IsVisible="{Binding Translation, Converter={x:Static conv:AppConverters.IsNotBlank}}" />
+                                                    <TextBlock Text="{Binding Source}" Classes="faint"
+                                                               FontSize="{DynamicResource FontSizeCaption}"
+                                                               Margin="0,5,0,0" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="{Binding DetailAsideColumn}"
+                                        Grid.Row="{Binding DetailAsideRow}">
+                            <StackPanel IsVisible="{Binding SelectedWord.Phrases, Converter={x:Static conv:AppConverters.IsNotEmpty}}">
+                                <TextBlock Classes="section-title" Text="短语" />
+                                <ItemsControl ItemsSource="{Binding SelectedWord.Phrases}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:TextPair">
+                                            <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,7" ColumnSpacing="14">
+                                                <SelectableTextBlock FontWeight="SemiBold"
+                                                           FontSize="{DynamicResource FontSizeBody}"
+                                                           MinWidth="150" TextWrapping="Wrap"
+                                                                                                                  ctl:Lookup.Text="{Binding Primary}"
+                                                           ctl:Lookup.Index="{ReflectionBinding $parent[Window].DataContext.WordIndex}"
+                                                           ctl:Lookup.Command="{ReflectionBinding $parent[Window].DataContext.NavigateToWordCommand}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Secondary}" Classes="muted"
+                                                           FontSize="{DynamicResource FontSizeBody}" TextWrapping="Wrap" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel IsVisible="{Binding SelectedWord.Synonyms, Converter={x:Static conv:AppConverters.IsNotEmpty}}">
+                                <TextBlock Classes="section-title" Text="同近义词" />
+                                <ItemsControl ItemsSource="{Binding SelectedWord.Synonyms}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:SynonymGroup">
+                                            <StackPanel Margin="0,0,0,10">
+                                                <TextBlock Text="{Binding Meaning}" Classes="muted" FontSize="{DynamicResource FontSizeCompact}"
+                                                           TextWrapping="Wrap" />
+                                                <ItemsControl ItemsSource="{Binding Words}" Margin="0,2,0,0">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="sys:String">
+                                                            <Button Theme="{DynamicResource BorderlessButton}" Classes="Primary" Content="{Binding}" FontSize="{DynamicResource FontSizeBody}"
+                                                                    Command="{ReflectionBinding $parent[Window].DataContext.NavigateToWordCommand}"
+                                                                    CommandParameter="{Binding}" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel IsVisible="{Binding SelectedWord.RelatedWords, Converter={x:Static conv:AppConverters.IsNotEmpty}}">
+                                <TextBlock Classes="section-title" Text="同根词" />
+                                <ItemsControl ItemsSource="{Binding SelectedWord.RelatedWords}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:WordLink">
+                                            <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,3" ColumnSpacing="14">
+                                                <Button Theme="{DynamicResource BorderlessButton}" Classes="Primary" Content="{Binding Word}" FontSize="{DynamicResource FontSizeBody}"
+                                                        MinWidth="150" HorizontalAlignment="Left"
+                                                        HorizontalContentAlignment="Left"
+                                                        Command="{ReflectionBinding $parent[Window].DataContext.NavigateToWordCommand}"
+                                                        CommandParameter="{Binding Word}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Note}" Classes="muted"
+                                                           FontSize="{DynamicResource FontSizeBody}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel IsVisible="{Binding SelectedWord.SourceBooks, Converter={x:Static conv:AppConverters.IsNotEmpty}}">
+                                <TextBlock Classes="section-title" Text="收录词书" />
+                                <ItemsControl ItemsSource="{Binding SelectedWord.SourceBooks}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="sys:String">
+                                            <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="7"
+                                                    Padding="9,4" Margin="0,0,7,7">
+                                                <TextBlock Text="{Binding}" Classes="muted" FontSize="{DynamicResource FontSizeSmall}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <!-- 放在最后：笔记框较高，夹在中间会把后面的内容顶到折叠线以下 -->
+                            <TextBlock Classes="section-title" Text="笔记" />
+                            <TextBox Classes="field" Text="{Binding NoteText}"
+                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="92"
+                                     PlaceholderText="记录自己的理解、易混词、记忆方法…" />
+                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,10,0,4" HorizontalAlignment="Right">
+                                <TextBlock Text="未保存" Foreground="{DynamicResource SemiColorWarning}" FontSize="{DynamicResource FontSizeSmall}"
+                                           VerticalAlignment="Center" IsVisible="{Binding IsNoteDirty}" />
+                                <Button Content="保存笔记" Command="{Binding SaveNoteCommand}"
+                                        Classes.Primary="{Binding IsNoteDirty}" ToolTip.Tip="Ctrl+S" />
+                            </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+                </Panel>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Background="{DynamicResource SemiColorBackground1}"
+                BorderBrush="{DynamicResource SemiColorBorder}" BorderThickness="0,1,0,0" Padding="20,9">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{Binding StatusMessage}" Classes="muted" FontSize="{DynamicResource FontSizeSmall}"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <ProgressBar Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding IsBusy}"
+                             Width="100" Height="3" />
+            </Grid>
+        </Border>
+
+        <!--
+            专注模式盖住整个窗口（含顶栏），复习时视野里只剩这张卡片。
+            用的是同一个 StudySession 控件，不是另抄一份界面。
+        -->
+        <Border Grid.Row="0" Grid.RowSpan="3" x:Name="StudyFocusOverlay"
+                Background="{DynamicResource SemiColorBackground0}"
+                IsVisible="{Binding Study.IsFocusMode}">
+            <Grid RowDefinitions="Auto,*" Margin="28,20,28,28">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="专注复习" FontSize="{DynamicResource FontSizeSubtitle}"
+                               FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Theme="{DynamicResource BorderlessButton}"
+                            Command="{Binding Study.ToggleFocusCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <icons:MaterialIcon Kind="ArrowCollapseAll" />
+                            <TextBlock Text="退出（Esc）" VerticalAlignment="Center"
+                                       FontSize="{DynamicResource FontSizeCaption}" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- 限宽居中：铺满不等于把按钮拉到两米宽 -->
+                <views:StudySession Grid.Row="1" Classes="focus" DataContext="{Binding Study}"
+                                    MaxWidth="720" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
