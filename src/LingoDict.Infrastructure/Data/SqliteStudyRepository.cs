@@ -17,14 +17,52 @@ public sealed class SqliteStudyRepository : IStudyRepository, IDisposable
         introduced_at
         """;
 
+    /// <summary>同样的列，但带表别名——join 进 dict.words 之后 headword 会歧义。</summary>
+    private const string CardColumnsQualified = """
+        c.word_id, c.entry_id, c.headword, c.phonetic, c.translation, c.book_id,
+        c.repetition, c.interval_days, c.ease, c.due_at, c.last_reviewed_at, c.correct_count, c.lapse_count,
+        c.introduced_at
+        """;
+
+    /// <summary>
+    /// 词频排到这个名次以内的，当作「你已经会了」，放到最后教。
+    /// </summary>
+    /// <remarks>
+    /// 纯按词频投放的话，专四这类词书前几天全是 make / way / day —— 实测这本
+    /// 4,025 词的书里，1000 名以内的有 164 个（4%），按每天 20 个算是白花 8 天。
+    ///
+    /// 真正该先学的是 1000–5000 那一档（1,181 个，29%）：够常用所以有用，
+    /// 又不至于常用到你已经会了。所以顺序是「1000 名之后按词频升序 → 词频未知
+    /// → 1000 名以内」。太简单的不删，只是排到最后。
+    ///
+    /// 阈值定在 1000 而不是别的数：这是「英语最常见的一千词」这个通行的分界，
+    /// 也正好卡在这本书那 164 个和 1,181 个之间。
+    /// </remarks>
+    private const int AlreadyKnownFrequency = 1000;
+
     private const string NewPerDayKey = "study_new_per_day";
     private const string ReviewPerDayKey = "study_review_per_day";
 
     private readonly string _connectionString;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
 
-    public SqliteStudyRepository(string databasePath)
+    /// <summary>
+    /// 词典库的路径，用来给新词排序取词频。可以为空——那时投放顺序退回入库顺序。
+    /// </summary>
+    /// <remarks>
+    /// 词频在 dictionary.db，学习卡在 userdata.db，是两个文件。用 ATTACH 而不是
+    /// 把词频复制进用户库：不动用户既有的数据、不会因为重新导入词典而过期、
+    /// 也不会出现「刚整本加入学习的卡片还没有词频」这种半截状态。
+    /// 实测 ATTACH 的开销是每次开连接多 0.4ms（4.62 → 5.01），可以忽略。
+    /// </remarks>
+    private readonly string? _dictionaryPath;
+
+    public SqliteStudyRepository(string databasePath, string? dictionaryPath = null)
     {
+        _dictionaryPath = dictionaryPath is not null && File.Exists(dictionaryPath)
+            ? Path.GetFullPath(dictionaryPath)
+            : null;
+
         var fullPath = Path.GetFullPath(databasePath);
         var directory = Path.GetDirectoryName(fullPath);
         if (!string.IsNullOrEmpty(directory))
@@ -335,7 +373,7 @@ public sealed class SqliteStudyRepository : IStudyRepository, IDisposable
     {
         await using var connection = Open();
         var settings = await ReadSettingsAsync(connection, cancellationToken);
-        return await BuildQueueAsync(connection, now, settings, bookId, cancellationToken);
+        return await BuildQueueAsync(_dictionaryPath is not null, connection, now, settings, bookId, cancellationToken);
     }
 
     public Task<IReadOnlyList<StudyBook>> GetStudyBooksAsync(CancellationToken cancellationToken = default) =>
@@ -470,7 +508,7 @@ public sealed class SqliteStudyRepository : IStudyRepository, IDisposable
     {
         await using var connection = Open();
         var settings = await ReadSettingsAsync(connection, cancellationToken);
-        var remaining = (await BuildQueueAsync(connection, now, settings, bookId, cancellationToken)).Count;
+        var remaining = (await BuildQueueAsync(_dictionaryPath is not null, connection, now, settings, bookId, cancellationToken)).Count;
 
         await using var command = connection.CreateCommand();
         command.CommandText = """
@@ -502,7 +540,49 @@ public sealed class SqliteStudyRepository : IStudyRepository, IDisposable
     /// 队列分三段拼出来：今天已看过又到期的（不占配额）、到期复习（占复习配额）、新词（占新词配额）。
     /// 配额是"张数"上限，用 SQL 表达要绕 row_number，分三次查更直白。
     /// </summary>
+    /// <summary>
+    /// 新词的取法。<paramref name="withFrequency"/> 为假时（没有词典库）
+    /// 退回原来的入库顺序，其余一切照常。
+    /// </summary>
+    private static string NewCardQuery(bool withFrequency)
+    {
+        if (!withFrequency)
+        {
+            return $"""
+                SELECT {CardColumns} FROM study_cards
+                WHERE introduced_at IS NULL
+                  AND ($book IS NULL OR book_id = $book)
+                ORDER BY book_id, word_id
+                LIMIT $limit;
+                """;
+        }
+
+        // 三档：够常用且你可能还不会的（升序）→ 词频未知的 → 太常用的（降序，
+        // 越接近有用区间的越先出）。同档内用 book_id, word_id 兜底，保证顺序稳定。
+        return $"""
+            SELECT {CardColumnsQualified}
+            FROM study_cards c
+            LEFT JOIN dict.words w ON w.id = c.word_id
+            WHERE c.introduced_at IS NULL
+              AND ($book IS NULL OR c.book_id = $book)
+            ORDER BY
+                CASE
+                    WHEN w.frequency >= {AlreadyKnownFrequency} THEN 0
+                    WHEN COALESCE(w.frequency, 0) = 0 THEN 1
+                    ELSE 2
+                END,
+                CASE
+                    WHEN w.frequency >= {AlreadyKnownFrequency} THEN w.frequency
+                    WHEN COALESCE(w.frequency, 0) = 0 THEN 0
+                    ELSE -w.frequency
+                END,
+                c.book_id, c.word_id
+            LIMIT $limit;
+            """;
+    }
+
     private static async Task<IReadOnlyList<StudyCard>> BuildQueueAsync(
+        bool withFrequency,
         SqliteConnection connection,
         DateTimeOffset now,
         StudySettings settings,
@@ -572,13 +652,7 @@ public sealed class SqliteStudyRepository : IStudyRepository, IDisposable
             ? []
             : await QueryAsync(
                 connection,
-                $"""
-                 SELECT {CardColumns} FROM study_cards
-                 WHERE introduced_at IS NULL
-                   AND ($book IS NULL OR book_id = $book)
-                 ORDER BY book_id, word_id
-                 LIMIT $limit;
-                 """,
+                NewCardQuery(withFrequency),
                 cancellationToken,
                 ("$book", book),
                 ("$limit", newBudget));
@@ -704,11 +778,38 @@ public sealed class SqliteStudyRepository : IStudyRepository, IDisposable
         Task.Run(work, cancellationToken);
 
     /// <summary>开连接。同步的——调用方已经在后台任务里了。</summary>
+    /// <summary>
+    /// 这条连接上已经挂过词典库了吗？
+    /// </summary>
+    /// <remarks>
+    /// Microsoft.Data.Sqlite 会池化连接，拿回来的可能是上一次用过的那条，
+    /// 上面的 ATTACH 还在。不查一下就再挂一次，第二个操作起就会抛
+    /// 「database dict is already in use」——在应用里就是学习页直接崩。
+    ///
+    /// 不用 Pooling=false 关掉池化：那会让每次开连接都慢一截（实测 4.6ms 里
+    /// 大部分是开文件），而这里只是多一次 pragma 查询。
+    /// </remarks>
+    private static bool IsAttached(SqliteConnection connection)
+    {
+        using var probe = connection.CreateCommand();
+        probe.CommandText = "SELECT COUNT(*) FROM pragma_database_list WHERE name='dict';";
+        return Convert.ToInt64(probe.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
+    }
+
     private SqliteConnection Open()
     {
         LastQueryThreadId = Environment.CurrentManagedThreadId;
         var connection = new SqliteConnection(_connectionString);
         connection.Open();
+
+        if (_dictionaryPath is not null && !IsAttached(connection))
+        {
+            using var attach = connection.CreateCommand();
+            attach.CommandText = "ATTACH DATABASE $path AS dict;";
+            attach.Parameters.AddWithValue("$path", _dictionaryPath);
+            attach.ExecuteNonQuery();
+        }
+
         return connection;
     }
 

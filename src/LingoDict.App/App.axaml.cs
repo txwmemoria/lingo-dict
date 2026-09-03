@@ -27,10 +27,13 @@ public partial class App : Application
             try
             {
                 var userDataPath = UserDataPathResolver.Resolve(desktop.Args);
+                var dictionaryPath = DictionaryPathResolver.Resolve();
                 viewModel = new MainViewModel(
-                    new SqliteDictionaryRepository(DictionaryPathResolver.Resolve()),
+                    new SqliteDictionaryRepository(dictionaryPath),
                     new SqliteUserDataRepository(userDataPath),
-                    new SqliteStudyRepository(userDataPath),
+
+                    // 学习库也要认得词典：新词按词频投放，而词频在词典库里。
+                    new SqliteStudyRepository(userDataPath, dictionaryPath),
                     userDataPath,
                     speech,
                     new GectorGrammarChecker(),
