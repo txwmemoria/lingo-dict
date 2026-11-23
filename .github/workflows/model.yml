@@ -50,7 +50,13 @@ jobs:
 
       - name: 导出、比对、量化、判分
         run: |
-          python eval/gector_export.py --dir weights --out artifacts/grammar --verb-vocab verb-form-vocab.txt | tee export.log
+          set -o pipefail
+          # 日志尾巴写进运行摘要：匿名访客看不到 Actions 日志，摘要页是公开的
+          if ! python -u eval/gector_export.py --dir weights --out artifacts/grammar --verb-vocab verb-form-vocab.txt 2>&1 | tee export.log; then
+            { echo '### 导出失败'; echo '```'; tail -n 60 export.log; echo '```'; pip list 2>/dev/null | grep -iE '^(torch|transformers|onnx|onnxruntime|numpy|safetensors) '; } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          { echo '### 导出日志（末尾）'; echo '```'; tail -n 25 export.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           hits=$(grep -oP 'int8: \K[0-9]+' export.log)
           echo "int8 判分：$hits/42"
           [ "$hits" -ge 34 ] || { echo "int8 只有 $hits/42，低于 34，不发"; exit 1; }
