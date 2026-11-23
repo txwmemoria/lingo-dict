@@ -25,14 +25,16 @@ public sealed class GrammarModelInstaller : IGrammarModelInstaller
     /// eval/gector_export.py 产出的那一份 int8 模型。
     /// </summary>
     /// <remarks>
-    /// <c>Urls</c> 还空着：托管在哪儿没定——上游权重是非商业授权，由我们再分发
-    /// 需要先跟作者确认。在那之前界面只提供「从本地文件导入」。
-    /// 定下来之后把地址填进来即可，下载逻辑本身已经跑通并有用例覆盖。
+    /// 托管在本仓库的 <c>model-v1</c> Release，由 <c>.github/workflows/model.yml</c> 生成：
+    /// 和 tests/LingoDict.Grammar.Tests/Golden/tagging.json 102/102 逐词一致，42 组 34/42。
+    /// 字节数和哈希跟作者本地那份（128_683_357 字节）不同，是导出工具版本带来的元数据差异，
+    /// 推理结果一致。重新发布模型时三个字段都要跟着换，见 docs/grammar.md。
+    /// 许可仍是上游的「仅限非商业用途」，界面在下载前会提示。
     /// </remarks>
     public static readonly GrammarModelSource Official = new(
-        Urls: [],
-        Bytes: 128_683_357,
-        Sha256: "902e12d36fb6f592444ed57ce7d7cd2f71933ffded65b06095dabe548416bda7");
+        Urls: ["https://github.com/txwmemoria/lingo-dict/releases/download/model-v1/gector-int8.onnx"],
+        Bytes: 128_737_105,
+        Sha256: "1c7c3bd46b7ad528afb69c1fce63e39583c8e632094398bb4412d9550087d8bd");
 
     private readonly GrammarModelSource _source;
     private readonly Func<string> _targetPath;

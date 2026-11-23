@@ -6,13 +6,14 @@ GitHub Actions 的两条流水线，以及词典库和写作模型为什么各�
 
 ## 持续集成与发行
 
-三条流水线，都在 `.github/workflows/`。
+四条流水线，都在 `.github/workflows/`。
 
 | | 触发 | 做什么 |
 | --- | --- | --- |
 | `ci.yml` | push 到 main / PR | Windows + macOS 上构建并跑全部测试 |
 | `release.yml` | 打 `v*` 标签 | 出 Windows 安装包和 macOS 两个架构的 dmg，建 Release |
 | `data.yml` | 打 `data-v*` 标签 / 手动 | 生成词典库，传到数据 Release，给 `release.yml` 下载 |
+| `model.yml` | 打 `model-v*` 标签 / 手动 | 导出并量化写作检查模型，传到模型 Release，应用内「下载模型」从这里取 |
 
 CI 不需要词典库和写作模型：依赖它们的用例走 `Skip` 而不是失败，
 所以在一个新克隆的仓库上 CI 是绿的。

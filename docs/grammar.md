@@ -77,7 +77,13 @@ pwsh scripts/publish.ps1
 #### 第三步（可选）：配下载源
 
 只有打了 `-NoGrammar` 的精简包，或者用户想重装模型时才用得上。
-**默认是空的，所以「下载模型」按钮不显示**，界面只给「从本地文件导入」。
+
+**已经配好：** 模型由 `.github/workflows/model.yml` 生成（打 `model-v*` 标签触发），
+传到本仓库的 `model-v1` Release，`Official` 指向那里。工作流把 onnxruntime 钉在 1.23.2——
+量化结果随版本变，1.32 量出来只有 31/42；放行条件是判分不低于 34/42，或和
+`tests/LingoDict.Grammar.Tests/Golden/tagging.json` 逐词一致不少于 100/102。
+
+换模型或换托管地址时，照下面改。
 
 要开启，编辑 [`src/LingoDict.Grammar/GrammarModelInstaller.cs`](../src/LingoDict.Grammar/GrammarModelInstaller.cs)
 里的 `Official`，三个字段都要对：
