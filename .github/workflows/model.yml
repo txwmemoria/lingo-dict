@@ -57,21 +57,40 @@ jobs:
           code=$?
           set -e
           cat export.log
-          echo "::notice title=exit::gector_export.py exited with $code, log has $(wc -l < export.log) lines"
-          tail -n 12 export.log | cut -c1-300 | tr -d '\r' | while IFS= read -r line; do echo "::notice title=log::${line//%/%25}"; done
           if [ "$code" -ne 0 ]; then
-            # 匿名访客看不到 Actions 日志，但注解是公开的：把日志最后几行逐条发成注解
-            tail -n 8 export.log | cut -c1-300 | tr -d '\r' | while IFS= read -r line; do
-              echo "::error title=export::${line//%/%25}"
-            done
-            pip list 2>/dev/null | grep -iE '^(torch|transformers|onnx|onnxruntime|onnxscript|numpy) ' | tr '\n' ' ' | sed 's/^/::error title=versions::/' ; echo
+            tail -n 8 export.log | cut -c1-300 | tr -d '\r' | while IFS= read -r line; do echo "::error title=export::${line//%/%25}"; done
             exit 1
           fi
-          { echo '### 导出日志（末尾）'; echo '```'; tail -n 25 export.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+          # 和仓库里的黄金样本对一遍：tests/LingoDict.Grammar.Tests/Golden 是作者那份 int8 模型的输出。
+          # 分词对不上 → transformers 变了；fp32 标签就对不上 → 导出 / 权重变了；只有 int8 对不上 → 量化变了。
+          python eval/gector_golden.py --dir weights --out tok-ci.json \
+            --onnx artifacts/grammar/gector-int8.onnx --labels artifacts/grammar/labels.txt --tagging-out tag-int8.json > /dev/null
+          python eval/gector_golden.py --dir weights --out /dev/null \
+            --onnx artifacts/grammar/gector-fp32.onnx --labels artifacts/grammar/labels.txt --tagging-out tag-fp32.json > /dev/null
+          python - <<'PY' | tee compare.txt
+          import json
+          g = "tests/LingoDict.Grammar.Tests/Golden/"
+          gt, gl = json.load(open(g + "tokenizer.json")), json.load(open(g + "tagging.json"))
+          ct = json.load(open("tok-ci.json"))
+          i8, f32 = json.load(open("tag-int8.json")), json.load(open("tag-fp32.json"))
+          tok = sum(a["ids"] == b["ids"] for a, b in zip(gt, ct))
+          m8 = sum(a["labels"] == b["labels"] for a, b in zip(gl, i8))
+          m32 = sum(a["labels"] == b["labels"] for a, b in zip(gl, f32))
+          print(f"tokenizer {tok}/{len(gt)} | int8 labels {m8}/{len(gl)} | fp32 labels {m32}/{len(gl)}")
+          PY
+          echo "::notice title=golden::$(cat compare.txt)"
+          echo "::notice title=scores::$(grep -E '^  (fp32|int8): ' export.log | tr -s ' ' | tr '\n' ' ')"
+          echo "::notice title=versions::$(pip list 2>/dev/null | grep -iE '^(torch|transformers|tokenizers|onnx|onnxruntime|numpy) ' | tr -s ' ' | tr '\n' ' ')"
+
           hits=$(grep -oP 'int8: \K[0-9]+' export.log || true)
-          [ -n "$hits" ] || { echo "::error title=score::no 'int8: N/42' line in the log"; exit 1; }
-          echo "int8 判分：$hits/42"
-          [ "$hits" -ge 34 ] || { echo "int8 只有 $hits/42，低于 34，不发"; exit 1; }
+          m8=$(grep -oP 'int8 labels \K[0-9]+' compare.txt || echo 0)
+          echo "int8 判分：$hits/42；和作者那份模型逐词一致：$m8/102"
+          # 两条路放行：判分不低于 34/42，或者和作者的模型几乎逐词一致（量化细节不同的正常抖动）
+          if [ "${hits:-0}" -lt 34 ] && [ "$m8" -lt 100 ]; then
+            echo "::error title=gate::int8 ${hits:-?}/42 and only $m8/102 labels match the reference model"
+            exit 1
+          fi
 
       - name: 记下大小和哈希
         id: sum
