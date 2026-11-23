@@ -54,6 +54,9 @@ jobs:
           # 日志尾巴写进运行摘要：匿名访客看不到 Actions 日志，摘要页是公开的
           if ! python -u eval/gector_export.py --dir weights --out artifacts/grammar --verb-vocab verb-form-vocab.txt 2>&1 | tee export.log; then
             { echo '### 导出失败'; echo '```'; tail -n 60 export.log; echo '```'; pip list 2>/dev/null | grep -iE '^(torch|transformers|onnx|onnxruntime|numpy|safetensors) '; } >> "$GITHUB_STEP_SUMMARY"
+            # 再发一条 error 注解：注解在公开仓库里不登录也能看到
+            msg=$( { tail -n 30 export.log; pip list 2>/dev/null | grep -iE '^(torch|transformers|onnx|onnxruntime|onnxscript|numpy) '; } | sed -e 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=导出失败::$msg"
             exit 1
           fi
           { echo '### 导出日志（末尾）'; echo '```'; tail -n 25 export.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
