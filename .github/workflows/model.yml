@@ -51,14 +51,18 @@ jobs:
       - name: 导出、比对、量化、判分
         run: |
           set -o pipefail
-          # 日志尾巴写进运行摘要：匿名访客看不到 Actions 日志，摘要页是公开的
-          if ! python -u eval/gector_export.py --dir weights --out artifacts/grammar --verb-vocab verb-form-vocab.txt 2>&1 | tee export.log; then
-            # 先发 error 注解（公开仓库里不登录也能看到），再写摘要；诊断命令出错不影响退出码
-            set +e
-            versions=$(pip list 2>/dev/null | grep -iE '^(torch|transformers|onnx|onnxruntime|onnxscript|numpy) ')
-            msg=$(printf '%s\n%s\n' "$(tail -n 30 export.log)" "$versions" | sed -e 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
-            echo "::error title=导出失败::$msg"
-            { echo '### 导出失败'; echo '```'; tail -n 60 export.log; echo "$versions"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=export::starting gector_export.py"
+          set +e
+          python -u eval/gector_export.py --dir weights --out artifacts/grammar --verb-vocab verb-form-vocab.txt > export.log 2>&1
+          code=$?
+          set -e
+          cat export.log
+          if [ "$code" -ne 0 ]; then
+            # 匿名访客看不到 Actions 日志，但注解是公开的：把日志最后几行逐条发成注解
+            tail -n 8 export.log | cut -c1-300 | tr -d '\r' | while IFS= read -r line; do
+              echo "::error title=export::${line//%/%25}"
+            done
+            pip list 2>/dev/null | grep -iE '^(torch|transformers|onnx|onnxruntime|onnxscript|numpy) ' | tr '\n' ' ' | sed 's/^/::error title=versions::/' ; echo
             exit 1
           fi
           { echo '### 导出日志（末尾）'; echo '```'; tail -n 25 export.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
