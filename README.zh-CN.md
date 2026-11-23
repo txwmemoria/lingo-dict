@@ -32,7 +32,7 @@ Windows / macOS 上的离线英汉词典。不联网、不注册、不上报—�
 
 ## 安装
 
-到 [Releases](https://github.com/sdkpods/LingoDict/releases/latest) 拿最新的包：
+到 [Releases](https://github.com/txwmemoria/lingo-dict/releases/latest) 拿最新的包：
 
 - **Windows** —— `LingoDict-*-win-x64-Setup.exe`。装到 `%LOCALAPPDATA%\LingoDict`，不需要管理员权限。
 - **macOS** —— 按芯片选 `.dmg`（Apple Silicon 用 `osx-arm64`，Intel 用 `osx-x64`），拖进 Applications。
@@ -44,20 +44,17 @@ macOS 的包**没有签名和公证**。首次打开要右键 →「打开」，
 
 ## 从源码构建
 
-需要 .NET SDK 9 和 Python 3（后者只用于一次性导入数据）。
+需要 .NET SDK 9。
 
 词书数据**不在本仓库里**——它属于 [kajweb/dict](https://github.com/kajweb/dict)。
-克隆它，再跑它自带的下载脚本：
+克隆它就行，81 个词书压缩包（约 71 MiB）就在仓库里：
 
 ```bash
-git clone https://github.com/kajweb/dict data/kajweb-dict
+git clone --depth 1 https://github.com/kajweb/dict data/kajweb-dict
 ```
 
-```bash
-python data/kajweb-dict/download.py
-```
-
-会取回 81 个压缩包，约 71 MiB。`data/kajweb-dict/` 在本仓库里是 git-ignored 的。
+不要跑它自带的 `download.py`：它会从一个老的 CDN 地址重新下载每个压缩包，
+地址失效时会把好好的文件覆盖掉。`data/kajweb-dict/` 在本仓库里是 git-ignored 的。
 
 可选：加上 [ECDICT](https://github.com/skywind3000/ECDICT)（MIT，63 MiB）的
 词频和词形变化。
@@ -132,7 +129,7 @@ dotnet test
 仓库里的代码是一回事，它消费的东西是另一回事。
 
 - **词书数据**来自 [kajweb/dict](https://github.com/kajweb/dict)。这里不再分发一次——
-  `download.py` 去取，生成的数据库也不入库。
+  由你自己克隆，生成的数据库也不入库。
 - **语法模型**衍生自 [gotutiyan/gector](https://github.com/gotutiyan/gector)，
   其训练数据（NUCLE、Lang-8）**仅限非商业用途**。因此任何发行版都不打包它，
   由应用在首次使用时下载或从本地导入。见

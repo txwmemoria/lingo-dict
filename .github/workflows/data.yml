@@ -1,0 +1,79 @@
+name: Data
+
+# 生成词典库，传到数据 Release（data-v<schema>），给 release.yml 下载。
+#
+# 每个 schema 版本只跑一次：打 data-v* 标签，或者手动触发。
+# 平时的 CI 和发版都不碰上游——它们只下载这里传上去的 dictionary.db。
+#
+# 词书来自 kajweb/dict：81 个压缩包就在它的仓库里，浅克隆即可。
+# 不跑它的 download.py——那会从一个老 CDN 重新下载，地址失效时反而把好文件覆盖掉。
+# 词频和词形变化来自 ECDICT（MIT），可选，但发行版要带上。
+
+on:
+  push:
+    tags: ['data-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: 生成词典库
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: 核对 schema 与标签
+        id: tag
+        run: |
+          schema=$(grep -oP 'SupportedSchemaVersion\s*=\s*"\K[0-9]+' src/LingoDict.Infrastructure/Data/SqliteDictionaryRepository.cs)
+          [ -n "$schema" ] || { echo "找不到 SupportedSchemaVersion"; exit 1; }
+          tag="data-v$schema"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "$tag" ]; then
+            echo "标签 ${GITHUB_REF_NAME} 和代码里的 schema $schema 对不上（应为 $tag）"; exit 1
+          fi
+          echo "schema=$schema" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "schema $schema → $tag"
+
+      - name: 取词书（kajweb/dict）
+        run: |
+          git clone --depth 1 https://github.com/kajweb/dict data/kajweb-dict
+          n=$(ls data/kajweb-dict/book/*.zip | wc -l)
+          echo "词书压缩包：$n 个"
+          [ "$n" -ge 80 ] || { echo "词书不全"; exit 1; }
+
+      - name: 取词频（ECDICT）
+        run: |
+          mkdir -p data/ecdict
+          curl -fsSL -o data/ecdict/ecdict.csv https://raw.githubusercontent.com/skywind3000/ECDICT/master/ecdict.csv
+          ls -lh data/ecdict/ecdict.csv
+
+      - name: 生成
+        run: dotnet run -c Release --project src/LingoDict.Importer
+
+      - name: 检查
+        run: |
+          bytes=$(stat -c %s artifacts/dictionary.db)
+          echo "dictionary.db：$((bytes / 1024 / 1024)) MiB"
+          [ "$bytes" -gt $((50 * 1024 * 1024)) ] || { echo "词典库太小，不像是完整的"; exit 1; }
+
+      - name: 传到数据 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          SCHEMA: ${{ steps.tag.outputs.schema }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" artifacts/dictionary.db --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" artifacts/dictionary.db \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "词典库 schema $SCHEMA" \
+              --notes "由 LingoDict.Importer 从 kajweb/dict 和 ECDICT 生成，供 release.yml 取用。不是给用户下载的安装包。" \
+              --latest=false
+          fi

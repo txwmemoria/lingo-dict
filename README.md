@@ -37,7 +37,7 @@ into nothing.
 
 ## Install
 
-Grab the latest build from [Releases](https://github.com/sdkpods/LingoDict/releases/latest):
+Grab the latest build from [Releases](https://github.com/txwmemoria/lingo-dict/releases/latest):
 
 - **Windows** — `LingoDict-*-win-x64-Setup.exe`. Installs to `%LOCALAPPDATA%\LingoDict`, no administrator rights needed.
 - **macOS** — the `.dmg` for your chip (`osx-arm64` for Apple Silicon, `osx-x64` for Intel), then drag it into Applications.
@@ -49,20 +49,18 @@ Or build from source, below.
 
 ## Build from source
 
-You need the .NET SDK 9 and Python 3 (for the one-time data import).
+You need the .NET SDK 9.
 
 The vocabulary data is **not in this repository** — it belongs to
-[kajweb/dict](https://github.com/kajweb/dict). Clone it and run its downloader:
+[kajweb/dict](https://github.com/kajweb/dict). Clone it; the 81 book archives (about 71 MiB)
+come with the clone:
 
 ```bash
-git clone https://github.com/kajweb/dict data/kajweb-dict
+git clone --depth 1 https://github.com/kajweb/dict data/kajweb-dict
 ```
 
-```bash
-python data/kajweb-dict/download.py
-```
-
-That fetches 81 archives, about 71 MiB. `data/kajweb-dict/` is git-ignored here.
+Do not run its `download.py`: it re-fetches every archive from an old CDN address and would
+overwrite the good copies if that address is gone. `data/kajweb-dict/` is git-ignored here.
 
 Optionally, add word frequencies and inflected forms from
 [ECDICT](https://github.com/skywind3000/ECDICT) (MIT, 63 MiB):
@@ -137,7 +135,7 @@ way it is, including the approaches that did not work.
 The code in this repository is one thing; what it consumes is another.
 
 - **Vocabulary data** comes from [kajweb/dict](https://github.com/kajweb/dict). It is not
-  redistributed here — `download.py` fetches it, and the built database is not committed.
+  redistributed here — you clone it yourself, and the built database is not committed.
 - **The grammar model** is derived from [gotutiyan/gector](https://github.com/gotutiyan/gector),
   whose training data (NUCLE, Lang-8) is licensed for **non-commercial use only**. It is
   therefore not bundled in any release; the app downloads or imports it on first use.

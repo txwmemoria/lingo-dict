@@ -6,12 +6,13 @@ GitHub Actions 的两条流水线，以及词典库和写作模型为什么各�
 
 ## 持续集成与发行
 
-两条流水线，都在 `.github/workflows/`。
+三条流水线，都在 `.github/workflows/`。
 
 | | 触发 | 做什么 |
 | --- | --- | --- |
 | `ci.yml` | push 到 main / PR | Windows + macOS 上构建并跑全部测试 |
 | `release.yml` | 打 `v*` 标签 | 出 Windows 安装包和 macOS 两个架构的 dmg，建 Release |
+| `data.yml` | 打 `data-v*` 标签 / 手动 | 生成词典库，传到数据 Release，给 `release.yml` 下载 |
 
 CI 不需要词典库和写作模型：依赖它们的用例走 `Skip` 而不是失败，
 所以在一个新克隆的仓库上 CI 是绿的。
@@ -33,11 +34,22 @@ CI 不需要词典库和写作模型：依赖它们的用例走 `Skip` 而不是
 zip 生成（`.gitignore` 排除了 `data/kajweb-dict/book/*.zip`），在公开仓库里再分发
 一次不合适；每次 CI 都去抓上游同样不合适。
 
-所以：**本地生成一次，传到一个专门的数据 Release，CI 只是下载。**
+所以：**每个 schema 版本只生成一次，传到一个专门的数据 Release，发版时只是下载。**
+
+生成交给 `data.yml`：打一个 `data-v<schema>` 标签就跑——浅克隆 kajweb/dict
+（81 个压缩包就在它的仓库里，不跑它的 `download.py`），取 ECDICT，跑 Importer，
+把 `dictionary.db` 传到同名 Release（已存在就覆盖）。数据 Release 标成非 latest，
+不会顶掉真正的版本。
+
+```bash
+git tag data-v7 && git push origin data-v7
+```
+
+也可以在本地生成后手动传：
 
 ```bash
 dotnet run --project src/LingoDict.Importer
-gh release create data-v7 artifacts/dictionary.db --title "词典库 schema 7" --notes "由 LingoDict.Importer 从 data/kajweb-dict 生成，供 release.yml 取用。"
+gh release create data-v7 artifacts/dictionary.db --title "词典库 schema 7" --latest=false --notes "由 LingoDict.Importer 生成，供 release.yml 取用。"
 ```
 
 标签里的版本号跟着 `SqliteDictionaryRepository.SupportedSchemaVersion` 走。
