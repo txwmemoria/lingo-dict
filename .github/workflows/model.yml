@@ -1,0 +1,96 @@
+name: Model
+
+# 生成写作检查用的 GECToR int8 模型，传到模型 Release（model-v*），
+# 应用里「下载模型」按钮就从这里取（GrammarModelInstaller.Official）。
+#
+# 流程就是 docs/grammar.md 第一步：取上游权重 → eval/gector_export.py
+# 导出 fp32 ONNX、逐句比对 PyTorch、量化到 int8、42 组题重新判分。
+# int8 低于 34/42 就停：说明上游权重换了版本，不该往下发。
+#
+# 许可：权重来自 gotutiyan/gector-roberta-base-5k，模型卡写明只限非商业用途
+# （训练数据含 NUCLE、Lang-8）。Release 说明里照写，应用里下载前也会提示。
+
+on:
+  push:
+    tags: ['model-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: 导出并量化
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: 装依赖（CPU 版 torch）
+        run: |
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet transformers safetensors onnx onnxruntime numpy huggingface_hub
+
+      - name: 取上游权重
+        run: |
+          python - <<'PY'
+          from huggingface_hub import snapshot_download
+          snapshot_download(
+              "gotutiyan/gector-roberta-base-5k",
+              local_dir="weights",
+              allow_patterns=["config.json", "model.safetensors", "vocab.json", "merges.txt",
+                              "tokenizer.json", "tokenizer_config.json", "special_tokens_map.json"],
+          )
+          PY
+          ls -l weights
+          curl -fsSL -o verb-form-vocab.txt https://raw.githubusercontent.com/grammarly/gector/master/data/verb-form-vocab.txt
+          wc -l verb-form-vocab.txt
+
+      - name: 导出、比对、量化、判分
+        run: |
+          python eval/gector_export.py --dir weights --out artifacts/grammar --verb-vocab verb-form-vocab.txt | tee export.log
+          hits=$(grep -oP 'int8: \K[0-9]+' export.log)
+          echo "int8 判分：$hits/42"
+          [ "$hits" -ge 34 ] || { echo "int8 只有 $hits/42，低于 34，不发"; exit 1; }
+
+      - name: 记下大小和哈希
+        id: sum
+        run: |
+          f=artifacts/grammar/gector-int8.onnx
+          bytes=$(stat -c %s "$f")
+          sha=$(sha256sum "$f" | cut -d' ' -f1)
+          echo "bytes=$bytes" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "gector-int8.onnx  $bytes 字节  sha256 $sha"
+
+      - name: 传到模型 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || 'model-v1' }}
+          BYTES: ${{ steps.sum.outputs.bytes }}
+          SHA: ${{ steps.sum.outputs.sha }}
+        run: |
+          notes=$(cat <<EOF
+          LingoDict 写作检查用的 GECToR 模型（int8 ONNX），由 \`.github/workflows/model.yml\` 从上游权重导出。
+          应用的「写作」页点「下载模型」就是从这里取，一般不需要手动下载。
+
+          - 文件：\`gector-int8.onnx\`
+          - 大小：$BYTES 字节
+          - SHA-256：\`$SHA\`
+
+          **许可：仅限非商业用途。** 权重来自 [gotutiyan/gector-roberta-base-5k](https://huggingface.co/gotutiyan/gector-roberta-base-5k)，
+          其训练数据（NUCLE、Lang-8）只允许非商业使用。代码部分（gotutiyan/gector）为 MIT。
+          EOF
+          )
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" artifacts/grammar/gector-int8.onnx --clobber --repo "$GITHUB_REPOSITORY"
+            gh release edit "$TAG" --notes "$notes" --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" artifacts/grammar/gector-int8.onnx \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "写作检查模型 $TAG" \
+              --notes "$notes" \
+              --latest=false
+          fi
