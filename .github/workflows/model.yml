@@ -31,7 +31,10 @@ jobs:
       - name: 装依赖（CPU 版 torch）
         run: |
           pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
-          pip install --quiet transformers safetensors onnx onnxruntime numpy huggingface_hub
+          # onnxruntime 钉在 1.23.2：量化结果随版本变。实测 1.20.1 / 1.21.1 / 1.23.2 产出的 int8
+          # 和作者那份模型（tests/.../Golden/tagging.json）102/102 逐词一致、42 组 34/42；
+          # 1.32 只有 99/102、31/42。
+          pip install --quiet transformers safetensors onnx "onnxruntime==1.23.2" "numpy<2.3" huggingface_hub
 
       - name: 取上游权重
         run: |
